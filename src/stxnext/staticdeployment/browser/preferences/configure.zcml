@@ -1,0 +1,24 @@
+<configure xmlns="http://namespaces.zope.org/zope"
+           xmlns:browser="http://namespaces.zope.org/browser"
+           xmlns:five="http://namespaces.zope.org/five">
+
+    <browser:page
+    	for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+    	name="staticdeployment-controlpanel"
+    	permission="cmf.ManagePortal"
+    	class=".staticdeployment.StaticDeploymentForm"
+    	/>
+     
+    <adapter
+     	for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+     	provides=".staticdeployment.IStaticDeploymentSettings"
+     	factory=".staticdeployment.StaticDeploymentSettingsAdapter"
+     	/>
+    
+    <adapter
+     	for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+     	provides=".staticdeployment.IStaticDeployment"
+     	factory=".staticdeployment.StaticDeploymentAdapter"
+     	/>
+
+</configure>
