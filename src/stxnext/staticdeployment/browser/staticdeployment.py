@@ -11,7 +11,7 @@ from OFS.Image import Pdata, Image as OFSImage
 from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
 from Products.ATContentTypes.content.file import ATFile
-from Products.ATContentTypes.interface.interfaces import IATContentType
+from Products.Archetypes.interfaces import IBaseObject
 from Products.CMFCore.FSDTMLMethod import FSDTMLMethod
 from Products.CMFCore.FSFile import FSFile
 from Products.CMFCore.FSImage import FSImage
@@ -27,6 +27,7 @@ from plone.i18n.normalizer.interfaces import IUserPreferredURLNormalizer
 from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
 from zope.component.interfaces import IResource
 from zope.interface import Interface
+from zope.contentprovider.interfaces import ContentProviderLookupError
 
 from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeploymentSettings
 from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep
@@ -251,6 +252,11 @@ class StaticDeploymentView(BrowserView):
         if obj_url:
             self.request['URL'] = obj_url
 
+        ## breadcrumb implementation in quills uses 'PARENTS', so it must
+        ## be overriden but ony for a while 
+        initial_parents = self.request['PARENTS']
+        self.request['PARENTS'] = obj.aq_chain
+
         try:
             if IResource.providedBy(obj):
                 try:
@@ -281,7 +287,7 @@ class StaticDeploymentView(BrowserView):
             if mt in self.file_types or isinstance(obj, (ImageField, OFSImage, Pdata)):
                 return self._render_obj(obj.data)
 
-            if IATContentType.providedBy(obj) or isinstance(obj, PloneSite):
+            if IBaseObject.providedBy(obj) or isinstance(obj, PloneSite):
                 def_page_id = obj.getDefaultPage()
                 if def_page_id:
                     def_page = obj[def_page_id]
@@ -290,7 +296,10 @@ class StaticDeploymentView(BrowserView):
                 view_name = obj.getLayout()
                 view = queryMultiAdapter((obj, self.request), name=view_name)
                 if view:
-                    return view()
+                    try:
+                        return view()
+                    except ContentProviderLookupError:
+                        pass
 
                 view = obj.restrictedTraverse(view_name, None)
                 if view:
@@ -305,6 +314,9 @@ class StaticDeploymentView(BrowserView):
             ## back to initial url
             if obj_url:
                 self.request['URL'] = initial_url
+
+            ## back to initial parents
+            self.request['PARENTS'] = initial_parents
 
         log.warning("Not recognized object '%s'!" % repr(obj))
         return None

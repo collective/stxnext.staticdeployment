@@ -11,3 +11,4 @@ Changelog
 
 * support for OFS.Image.Image objects [sargo]
 * support for Products.Five.browser.resource.Resource (linked like ++resource++) objects [sargo]
+* support for Quills (Weblog, WeblogEntry) objects [sargo]
