@@ -43,9 +43,9 @@ Author & Contact
 ================
 
 :Author:
-    Igor Kupczyński <``igor.kupczynski@stxnext.pl``>
-    Radosław Jankiewicz <``radoslaw.jankiewicz@stxnext.pl``>
-    Wojciech Lichota <``wojciech.lichota@stxnext.pl``>
+ * Igor Kupczyński <``igor.kupczynski@stxnext.pl``>
+ * Radosław Jankiewicz <``radoslaw.jankiewicz@stxnext.pl``>
+ * Wojciech Lichota <``wojciech.lichota@stxnext.pl``>
 
 .. image:: http://stxnext.pl/open-source/files/stx-next-logo
 
