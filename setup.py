@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 from setuptools import setup, find_packages
 
 version = open('src/stxnext/staticdeployment/version.txt').read()
