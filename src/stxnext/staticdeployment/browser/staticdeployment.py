@@ -7,8 +7,8 @@ from urllib import unquote
 from HTMLParser import HTMLParseError
 from urlparse import urlsplit
 
-from OFS.Image import Pdata
-from Products.Archetypes.Field import Image
+from OFS.Image import Pdata, Image as OFSImage
+from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
 from Products.ATContentTypes.content.file import ATFile
 from Products.ATContentTypes.interface.interfaces import IATContentType
@@ -25,6 +25,7 @@ from Products.statusmessages.message import Message
 
 from plone.i18n.normalizer.interfaces import IUserPreferredURLNormalizer
 from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
+from zope.component.interfaces import IResource
 from zope.interface import Interface
 
 from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeploymentSettings
@@ -251,6 +252,17 @@ class StaticDeploymentView(BrowserView):
             self.request['URL'] = obj_url
 
         try:
+            if IResource.providedBy(obj):
+                try:
+                    f = open(obj.context.path)
+                    result = f.read()
+                    f.close()
+                except IOError:
+                    log.error("Couldn't open '%s' file with resource" % obj.context.path)
+                    return None
+
+                return result
+
             if isinstance(obj, (BrowserView, FSPageTemplate, PythonScript)):
                 return obj()
 
@@ -266,7 +278,7 @@ class StaticDeploymentView(BrowserView):
             except AttributeError:
                 pass
 
-            if mt in self.file_types or isinstance(obj, (Image, Pdata)):
+            if mt in self.file_types or isinstance(obj, (ImageField, OFSImage, Pdata)):
                 return self._render_obj(obj.data)
 
             if IATContentType.providedBy(obj) or isinstance(obj, PloneSite):
