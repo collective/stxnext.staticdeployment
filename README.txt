@@ -57,6 +57,8 @@ Usage
 When website is ready to deployment go to *Site Setup* -> *Static deployment* -> *Deployment* tab. Select *Deploy static version of website* checkbox and press *Save* button. Deployment will work for few seconds or minutes (it depends on size of website and server performance).
 
 
+.. _default configuration: https://svn.plone.org/svn/collective/stxnext.staticdeployment/trunk/src/stxnext/staticdeployment/etc/staticdeployment.ini
+
 Author & Contact
 ================
 
