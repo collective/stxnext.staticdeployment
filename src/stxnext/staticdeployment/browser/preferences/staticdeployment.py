@@ -20,7 +20,7 @@ from Products.statusmessages.message import decode as message_decode
 log = logging.getLogger(__name__)
 
 
-RE_DOMAIN = re.compile(r'^[a-z0-9-]+(\.[a-z0-9-]+)*\.([a-z]{2,6})$')
+RE_DOMAIN = re.compile(r'^[a-z0-9-]+(\.[a-z0-9-]+)*\.([a-z]{2,6})(:[0-9]{1,5})?$')
 
 class NotDomain(ValidationError):
     __doc__ = u'Incorrect domain.'
@@ -61,7 +61,7 @@ class IStaticDeploymentSettings(Interface):
 
     last_triggered = TextLine(
         title=_(u'Last static deployment date'),
-        description=_(u'DLast static deployment date - format RRRR/MM/DD'),
+        description=_(u'Last static deployment date - format RRRR/MM/DD'),
         default=u'',
         required=False,
         )

@@ -11,32 +11,50 @@ Deploy Plone site to static files.
 Installation
 ============
 
-If you are using zc.buildout to manage your project, you can do this:
+Edit buildout.cfg and append `stxnext.staticdeployment` to eggs and zcml parameters in instance section::
 
-* Add ``stxnext.staticdeployment`` to the list of eggs to install, e.g.::
-
-    [buildout]
+  [instance]
+  eggs =
     ...
-    eggs =
-        ...
-        stxnext.staticdeployment
-      
-* Re-run buildout, e.g. with::
+    stxnext.staticdeployment
 
-    $ ./bin/buildout
-        
-Finally go to 'Site Setup' -> 'Add/Remove Products' and install stxnext.staticdeployment.
+  zcml =
+    ...
+    stxnext.staticdeployment
+
+Instance must be rebuild and restarted::
+
+  ./bin/buildout
+  ./bin/instance stop
+  ./bin/instance start
+
+This product must be also installed inside Plone site. Do do it, go to *Site Setup* -> *Add/Remove Products*, select checkbox near *stxnext.staticdeployment* and click *Install* button.
+
+
+Configuration
+=============
+
+Every website has own configuration (different set of eggs, skin, products etc.) - this I meas as project. But website can have few instances (development, test and production instances). Because of this, configuration is split for two parts: 
+
+ * instance parameters:
+
+   - parameters connected to instance - e.g.: domain
+   - configured in *Control Panel* - can be edited throw the web (*Site Setup* -> *Static deployment* -> *Settings* tab)
+   - form has description and validation - can be used by less experienced users
+
+ * website parameters:
+
+   - stored in INI file
+   - created by developer of website
+   - can be used by many sites
+   - `default configuration`_ (included in egg)
+   - default configuration can be overriden by file `${buildout:directory}/etc/staticdeployment.ini`
+
 
 Usage
 =====
 
-
-
-References
-==========
-
-.. Plone: http://plone.org
-
+When website is ready to deployment go to *Site Setup* -> *Static deployment* -> *Deployment* tab. Select *Deploy static version of website* checkbox and press *Save* button. Deployment will work for few seconds or minutes (it depends on size of website and server performance).
 
 
 Author & Contact
