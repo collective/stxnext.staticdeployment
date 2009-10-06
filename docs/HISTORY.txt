@@ -1,7 +1,20 @@
 Changelog
 =========
 
-0.1.0
-----------------
+0.1.0 [2009-09-29]
+------------------
 
 * Initial release [sargo]
+
+0.2.0 [2009-10-02]
+------------------
+
+* support for OFS.Image.Image objects [sargo]
+* support for Products.Five.browser.resource.Resource (linked like ++resource++) objects [sargo]
+* support for Quills (Weblog, WeblogEntry) objects [sargo]
+
+0.2.1 [2009-10-06]
+------------------
+
+* allow port number in domain name [sargo]
+* README update [sargo]
