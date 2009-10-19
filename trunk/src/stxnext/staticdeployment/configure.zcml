@@ -1,0 +1,20 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:five="http://namespaces.zope.org/five"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    i18n_domain="stxnext.varnishpurger">
+
+    <five:registerPackage package="." initialize=".initialize" />
+
+    <include package=".browser"/>
+    <include package=".adapters"/>    
+    
+    <genericsetup:registerProfile
+          name="stxnext.staticdeployment"
+          title="stxnext.staticdeployment"
+          directory="profiles/default"
+          description="Extension profile for staticdeployment."
+          provides="Products.GenericSetup.interfaces.EXTENSION"
+        />
+        
+</configure>

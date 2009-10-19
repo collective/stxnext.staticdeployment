@@ -1,0 +1,16 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="stxnext.staticdeployment">
+    
+    <include package=".preferences" />
+    
+    <browser:page
+		name="staticdeployment"
+		for="Products.CMFPlone.interfaces.siteroot.IPloneSiteRoot"
+		class=".staticdeployment.StaticDeploymentView"
+		permission="zope2.View"
+		allowed_attributes="update full"
+		/>
+
+</configure>
