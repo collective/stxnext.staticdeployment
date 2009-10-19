@@ -344,6 +344,24 @@ class StaticDeploymentView(BrowserView):
             filename = os.path.join(filename, 'index.html')
 
         self._write(filename, content)
+        
+        # deploy all sizes of images uploaded for the object
+        if not getattr(obj, 'schema', None):
+            return
+         
+        for field in obj.schema.fields():
+            if field.type != 'image':
+                continue
+            sizes = field.getAvailableSizes(field)
+            for scalename in sizes.keys():
+                image =  field.getScale(obj, scale=scalename)
+                if image:
+                    filename = image.getId()
+                    dir_path = obj.absolute_url_path().lstrip('/')
+                    file_path = os.path.join(dir_path, filename)
+                    content = self._render_obj(image)
+                    if content:
+                        self._write(file_path, content)
 
     def _deploy_resources(self, urls, base_path):
         """

@@ -18,3 +18,8 @@ Changelog
 
 * allow port number in domain name [sargo]
 * README update [sargo]
+
+0.3.0 [2009-10-19]
+------------------
+
+* deploying images in all defined sizes [stxnext]
