@@ -28,6 +28,7 @@ from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
 from zope.component.interfaces import IResource
 from zope.interface import Interface
 from zope.contentprovider.interfaces import ContentProviderLookupError
+from zope.publisher.interfaces import NotFound
 
 from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeploymentSettings
 from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep
@@ -58,7 +59,7 @@ class StaticDeploymentView(BrowserView):
         self._read_config()
         settings = IStaticDeploymentSettings(context)
         self.base_dir = os.path.normpath(settings.deployment_directory)
-        self.frontend_domain = 'http://%s/' % settings.frontend_domain
+        self.frontend_domain = self.request['BASE1']
         self.backend_domain = 'http://%s/' % settings.backend_domain
         self.deployed_resources = []
 
@@ -270,7 +271,11 @@ class StaticDeploymentView(BrowserView):
                 return result
 
             if isinstance(obj, (BrowserView, FSPageTemplate, PythonScript)):
-                return obj()
+                try:
+                    return obj()
+                except NotFound:
+                    log.error("Resource '%s' not found" % repr(obj))
+                    return None
 
             if isinstance(obj, (FSFile, FSImage)):
                 return self._render_obj(obj._readFile(None))

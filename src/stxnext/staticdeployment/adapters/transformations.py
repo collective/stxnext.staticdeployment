@@ -26,4 +26,6 @@ class RemoveDomainTransformation(Transformation):
         settings = IStaticDeploymentSettings(self.context)
         text = text.replace('http://%s/' % settings.frontend_domain, '/')
         text = text.replace('http://%s' % settings.frontend_domain, '/')
+        text = text.replace(self.context.request['BASE1']+'/', '/')
+        text = text.replace(self.context.request['BASE1'], '/')
         return text
