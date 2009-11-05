@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.3.2 [2009-11-05]
+------------------
+
+* domain validation will not refuse IP addresses [sargo]
+
 0.3.1 [2009-11-02]
 ------------------
 

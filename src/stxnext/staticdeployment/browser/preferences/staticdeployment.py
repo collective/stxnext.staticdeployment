@@ -21,12 +21,33 @@ log = logging.getLogger(__name__)
 
 
 RE_DOMAIN = re.compile(r'^[a-z0-9-]+(\.[a-z0-9-]+)*\.([a-z]{2,6})(:[0-9]{1,5})?$')
+RE_IPADDR = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:[0-9]{1,5})?$')
 
 class NotDomain(ValidationError):
     __doc__ = u'Incorrect domain.'
 
 def isDomain(value, dont_raise=False):
-    if not RE_DOMAIN.match(value):
+    """
+    Validator for domain name.
+    
+    >>> isDomain('www.example.com', True)
+    True
+    >>> isDomain('www.example.com:8080', True)
+    True
+    >>> isDomain('www.example', True)
+    False
+    >>> isDomain('www.example:8080', True)
+    False
+    >>> isDomain('127.0.0.1', True)
+    True
+    >>> isDomain('127.0.0.1:8080', True)
+    True
+    >>> isDomain('555.555.555.555', True)
+    False
+    >>> isDomain('256.0.0.0:8888', True)
+    False
+    """
+    if not (RE_DOMAIN.match(value) or RE_IPADDR.match(value)):
         if dont_raise: return False
         raise NotDomain(value)
     return True
