@@ -215,6 +215,13 @@ class StaticDeploymentView(BrowserView):
         Deploy views of context as pages.
         """
         for fullview_name in views:
+            
+            fullview_path = None
+            fullview_name_args = fullview_name.split('|')
+            if len(fullview_name_args) > 1:
+                fullview_name = fullview_name_args[0]
+                fullview_path = fullview_name_args[1]
+            
             context = self.context
             context_path = os.path.dirname(fullview_name)
             view_name = os.path.basename(fullview_name)
@@ -233,7 +240,7 @@ class StaticDeploymentView(BrowserView):
             if is_page:
                 filename = os.path.join(filename, 'index.html')
 
-            self._write(filename, content)
+            self._write(filename, content, fullview_path)
 
     def _render_obj(self, obj):
         """
