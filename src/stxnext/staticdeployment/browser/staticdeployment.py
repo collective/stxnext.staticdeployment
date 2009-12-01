@@ -60,7 +60,10 @@ class StaticDeploymentView(BrowserView):
         settings = IStaticDeploymentSettings(context)
         self.base_dir = os.path.normpath(settings.deployment_directory)
         self.frontend_domain = self.request['BASE1']
-        self.backend_domain = 'http://%s/' % settings.backend_domain
+        if settings.backend_domain.startswith('http'):
+            self.backend_domain = settings.backend_domain + '/'
+        else:
+            self.backend_domain = 'http://%s/' % settings.backend_domain
         self.deployed_resources = []
 
     def _read_config(self):
