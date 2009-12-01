@@ -20,8 +20,8 @@ from Products.statusmessages.message import decode as message_decode
 log = logging.getLogger(__name__)
 
 
-RE_DOMAIN = re.compile(r'^[a-z0-9-]+(\.[a-z0-9-]+)*\.([a-z]{2,6})(:[0-9]{1,5})?$')
-RE_IPADDR = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:[0-9]{1,5})?$')
+RE_DOMAIN = re.compile(r'^(https?://|)[a-z0-9-]+(\.[a-z0-9-]+)*\.([a-z]{2,6})(:[0-9]{1,5})?$')
+RE_IPADDR = re.compile(r'^(https?://|)(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:[0-9]{1,5})?$')
 
 class NotDomain(ValidationError):
     __doc__ = u'Incorrect domain.'
@@ -46,6 +46,10 @@ def isDomain(value, dont_raise=False):
     False
     >>> isDomain('256.0.0.0:8888', True)
     False
+    >>> isDomain('http://www.example.com', True)
+    True
+    >>> isDomain('https://127.0.0.1', True)
+    True
     """
     if not (RE_DOMAIN.match(value) or RE_IPADDR.match(value)):
         if dont_raise: return False
@@ -82,7 +86,7 @@ class IStaticDeploymentSettings(Interface):
 
     last_triggered = TextLine(
         title=_(u'Last static deployment date'),
-        description=_(u'Last static deployment date - format RRRR/MM/DD'),
+        description=_(u'Last static deployment date - format YYYY/MM/DD'),
         default=u'',
         required=False,
         )
@@ -188,8 +192,13 @@ class StaticDeploymentForm(ControlPanelForm):
                 message = _(u'Previously deployed files had been removed.')
                 messages.addStatusMessage(message, type='info')
 
+        if settings.frontend_domain.startswith('http'):
+            frontend_domain = settings.frontend_domain
+        else:
+            frontend_domain = 'http://' + settings.frontend_domain
+            
         if data['full_deployment']:
-            return self.request.response.redirect('http://%s/@@staticdeployment/full' % settings.frontend_domain)
+            return self.request.response.redirect('%s/@@staticdeployment/full' % frontend_domain)
 
         if data['update_deployment']:
-            return self.request.response.redirect('http://%s/@@staticdeployment/update' % settings.frontend_domain)
+            return self.request.response.redirect('%s/@@staticdeployment/update' % frontend_domain)
