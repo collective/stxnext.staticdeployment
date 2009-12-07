@@ -1,151 +1,134 @@
 # -*- coding: utf-8 -*-
-import os, shutil, logging, re
+import os, shutil, logging
+from ConfigParser import ParsingError
 
 from plone.app.controlpanel.events import ConfigurationChangedEvent
 from plone.app.controlpanel.form import ControlPanelForm
 from plone.app.form.validators import null_validator
-from plone.fieldsets.fieldsets import FormFieldsets
+from plone.app.form.widgets import MultiCheckBoxWidget
 from plone.protect import CheckAuthenticator
-from zope.component import getMultiAdapter
+from zope.component import getMultiAdapter, getUtility
+from zope.interface import Interface, implements
 from zope.event import notify
-from zope.formlib.form import Fields, FormFields, action, Fields, applyChanges
-from zope.interface import Interface
-from zope.schema import TextLine, Bool, ValidationError
+from zope.formlib.form import Fields, FormFields, action, applyChanges
+from zope.schema import TextLine, Bool, Tuple, Choice
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.interfaces import IVocabularyFactory
 
+from Products.CMFCore.utils import getToolByName
 from Products.CMFDefault.formlib.schema import ProxyFieldProperty, SchemaAdapterBase
+from Products.CMFDefault.formlib.vocabulary import StaticVocabulary
+from Products.CMFDefault.formlib.widgets import ChoiceRadioWidget
 from Products.CMFPlone import PloneMessageFactory as _
 from Products.statusmessages.interfaces import IStatusMessage
 from Products.statusmessages.message import decode as message_decode
 
+from stxnext.staticdeployment.interfaces import IStaticDeploymentUtils
+from stxnext.staticdeployment.utils import get_config_path, ConfigParser
+
+
 log = logging.getLogger(__name__)
-
-
-RE_DOMAIN = re.compile(r'^[a-z0-9-]+(\.[a-z0-9-]+)*\.([a-z]{2,6})(:[0-9]{1,5})?$')
-RE_IPADDR = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:[0-9]{1,5})?$')
-
-class NotDomain(ValidationError):
-    __doc__ = u'Incorrect domain.'
-
-def isDomain(value, dont_raise=False):
-    """
-    Validator for domain name.
-    
-    >>> isDomain('www.example.com', True)
-    True
-    >>> isDomain('www.example.com:8080', True)
-    True
-    >>> isDomain('www.example', True)
-    False
-    >>> isDomain('www.example:8080', True)
-    False
-    >>> isDomain('127.0.0.1', True)
-    True
-    >>> isDomain('127.0.0.1:8080', True)
-    True
-    >>> isDomain('555.555.555.555', True)
-    False
-    >>> isDomain('256.0.0.0:8888', True)
-    False
-    """
-    if not (RE_DOMAIN.match(value) or RE_IPADDR.match(value)):
-        if dont_raise: return False
-        raise NotDomain(value)
-    return True
-
-
-class IStaticDeploymentSettings(Interface):
-    """
-    Static deployment settings.
-    """
-    frontend_domain = TextLine(
-        title=_(u'Front-end domain'),
-        description=_(u''),
-        default=u'preview.example.com',
-        constraint=isDomain,
-        required=True,
-        )
-
-    backend_domain = TextLine(
-        title=_(u'Back-end domain'),
-        description=_(u''),
-        default=u'admin.example.com',
-        constraint=isDomain,
-        required=True,
-        )
-
-    deployment_directory = TextLine(
-        title=_(u'Deployment directory'),
-        description=_(u''),
-        default=u'/var/www/example.com/html',
-        required=True,
-        )
-
-    last_triggered = TextLine(
-        title=_(u'Last static deployment date'),
-        description=_(u'Last static deployment date - format RRRR/MM/DD'),
-        default=u'',
-        required=False,
-        )
 
 
 class IStaticDeployment(Interface):
     """
-    Static deployment.
+    Static deployment manage form.
     """
+    section_choice = Tuple(
+        title=_('Choose configuration section'),
+        required=False,
+        missing_value=set(),
+        value_type=Choice(
+            vocabulary="stxnext.staticdeployment.vocabularies.ConfigSections")
+        )
+    
+    last_triggered = TextLine(
+        title=_(u'Last static deployment date'),
+        description=_(u'Last static deployment date - format YYYY/MM/DD'),
+        default=u'',
+        required=False,
+        )
+    
     delete_previous = Bool(
         title=_(u'Remove previously deployed files'),
         description=_(u''),
         )
 
-    full_deployment = Bool(
+    deployment = Choice(
         title=_('Deploy static version of website'),
-        description=_(u''),
+        required=False,
+        description=_(u'Choose if you want to deploy all content or update content modified since last static deployment'),
+        vocabulary='stxnext.staticdeployment.vocabularies.DeploymentMode',
         )
-
-    update_deployment = Bool(
-        title=_(u'Update previously deployed files'),
-        description=_(u''),
-        )
-
-
-class StaticDeploymentSettingsAdapter(SchemaAdapterBase):
-    """
-    Settings storage (as site_properties in portal_properties).
-    """
-    frontend_domain = ProxyFieldProperty(IStaticDeploymentSettings['frontend_domain'])
-    backend_domain = ProxyFieldProperty(IStaticDeploymentSettings['backend_domain'])
-    deployment_directory = ProxyFieldProperty(IStaticDeploymentSettings['deployment_directory'])
-    last_triggered = ProxyFieldProperty(IStaticDeploymentSettings['last_triggered'])
 
 
 class StaticDeploymentAdapter(SchemaAdapterBase):
     """
-    No specific storage.
+    Storages for particular form fields.
     """
+    section_choice = set()
+    last_triggered = ProxyFieldProperty(IStaticDeployment['last_triggered'])
     delete_previous = False
-    full_deployment = False
-    update_deployment = False
+    deployment = False
 
+# Vocabularies
+available_deployment_modes = (
+        (u'full_deployment', 'full_deployment', _(u'Full deployment')),
+        (u'update_deployment', 'update_deployment', _(u'Update deployment')),
+        )
+        
+DeploymentModeVocabularyFactory = StaticVocabulary(available_deployment_modes)
 
-deployment_fieldset = FormFieldsets(IStaticDeployment)
-deployment_fieldset.id = 'deployment'
-deployment_fieldset.label = _(u'Deployment')
-deployment_fieldset.description = _(u'Static deployment')
+class ConfigSectionsVocabulary(object):
+    """
+    Vocabulary containing all sections defined in config file
+    """
+    implements(IVocabularyFactory)
 
-settings_fieldset = FormFieldsets(IStaticDeploymentSettings)
-settings_fieldset.id = 'settings'
-settings_fieldset.label = _(u'Settings')
-settings_fieldset.description = _(u'Static deployment settings')
+    def __call__(self, context):
+        """
+        """
+        config_path = os.path.normpath(get_config_path())
+        config_file = open(config_path, 'r')
+        config_parser = ConfigParser()
+        try:
+            config_parser.readfp(config_file)
+        except ParsingError, e:
+            message = _(u"Error when trying to parse '%s'" % config_path)
+            messages = IStatusMessage(context.context.request)
+            messages.addStatusMessage(_(e.message), type='error')
+            return SimpleVocabulary([])
+        sections = [SimpleTerm(section, u'%s' % section) for section in config_parser.sections()]
+        if config_parser.defaults():
+            sections.insert(0, SimpleTerm('DEFAULT', 'DEFAULT'))
+        return SimpleVocabulary(sections)
 
+ConfigSectionsVocabularyFactory = ConfigSectionsVocabulary()
 
+# widgets
+class MultiCheckBoxVocabularyWidget(MultiCheckBoxWidget):
+    """ 
+    Multicheckbox widget.
+    """
+    def __init__(self, field, request):
+        super(MultiCheckBoxVocabularyWidget, self).__init__(field,
+            field.value_type.vocabulary, request)
+
+# form
 class StaticDeploymentForm(ControlPanelForm):
     """
     Static deployment form.
     """
-    form_fields = FormFieldsets(deployment_fieldset, settings_fieldset)
-
     label = _('Static deployment')
     description = _(u'')
+    form_name = _(u'Static deployment panel')
+    form_fields = FormFields(IStaticDeployment)
+    form_fields['section_choice'].custom_widget = MultiCheckBoxVocabularyWidget
+    form_fields['deployment'].custom_widget = ChoiceRadioWidget
+    
+    def setUpWidgets(self, ignore_request=False):
+        super(StaticDeploymentForm, self).setUpWidgets(ignore_request=ignore_request)
+        self.widgets['deployment']._displayItemForMissingValue = False
 
     def status(self):
         msg_code = self.request.get('msg')
@@ -174,22 +157,61 @@ class StaticDeploymentForm(ControlPanelForm):
         """
         Do static deployment.
         """
-        settings = IStaticDeploymentSettings(self.context)
         messages = IStatusMessage(self.request)
+        
+        config_path = os.path.normpath(get_config_path())
+        config_file = open(config_path, 'r')
+        config_parser = ConfigParser()
+        try:
+            config_parser.readfp(config_file)
+        except ParsingError, e:
+            message = _(u"Error when trying to parse '%s'" % config_path)
+            messages.addStatusMessage(message, type='error')
+            return
+        
+        sections = data.get('section_choice', None)
+        if not sections:
+            return
+        
+        # deleting deployed files for paths given in config file
         if data['delete_previous']:
-            path = os.path.normpath(settings.deployment_directory)
-            try:
-                shutil.rmtree(path)
-            except OSError, e:
-                log.exception('Removing previously deployed files:')
-                message = _(u"Couldn't remove previously deployed files!")
-                messages.addStatusMessage(message, type='error')
+            for section in sections:
+                path = config_parser.get(section, 'deployment-directory').strip()
+                try:
+                    shutil.rmtree(path)
+                except OSError, e:
+                    log.exception('Removing previously deployed files for path: %s' % path)
+                    message = _(u"Couldn't remove files from %s" % path)
+                    messages.addStatusMessage(message, type='error')
+                else:
+                    message = _(u'Files from path %s have been succesfully removed.' % path)
+                    messages.addStatusMessage(message, type='info')
+        
+        if data['deployment']:
+            deployment_utils = getUtility(IStaticDeploymentUtils)
+            
+            # setting debug mode for resource tools
+            initial_debugmode = deployment_utils.initial_resources_tools_mode(self.context)
+            
+            # deploy only objects modified since given date
+            if data['deployment'] == 'update_deployment':
+                date = data['last_triggered']
             else:
-                message = _(u'Previously deployed files had been removed.')
-                messages.addStatusMessage(message, type='info')
+                date = None
 
-        if data['full_deployment']:
-            return self.request.response.redirect('http://%s/@@staticdeployment/full' % settings.frontend_domain)
+            try:
+                for section in sections:
+                    try:
+                        deployment_utils.deploy(self.context, self.request, section, date)
+                        message = _(u'Succesfull deployment for section %s' % section)
+                        messages.addStatusMessage(message, type='info')
+                    except Exception, e:
+                        message = _(u'Error while deploying section %s: %s' % (section, e))
+                        messages.addStatusMessage(message, type='error')
 
-        if data['update_deployment']:
-            return self.request.response.redirect('http://%s/@@staticdeployment/update' % settings.frontend_domain)
+            # reverting initial resource tools settings and request modifications  
+            finally:
+                skins_tool = getToolByName(self.context, 'portal_skins')
+                deployment_utils.revert_resources_tools_mode(self.context, initial_debugmode)
+                deployment_utils.revert_request_modifications(self.context, self.request)
+

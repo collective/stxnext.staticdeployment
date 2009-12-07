@@ -1,6 +1,19 @@
 Changelog
 =========
 
+0.5.0 [2009-12-07]
+------------------
+
+* configuration moved to staticdeployment.ini file [radekj]
+* changed way of configuring skins to deploy [radekj]
+* possibility to deploy many skin layers [radekj]
+
+0.4.0 [2009-12-01]
+------------------
+
+* added possibility to specify path in fs to dump additional-files [radekj]
+* added possibility to define protocol in domains configuration [radekj]
+
 0.3.2 [2009-11-05]
 ------------------
 
