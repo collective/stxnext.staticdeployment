@@ -110,6 +110,12 @@ class StaticDeploymentUtils(object):
             self.deploy_plonesite = self.config.get(section, 'deploy-plonesite').strip()
         except NoOptionError:
             self.deploy_plonesite = 'true'
+            
+        try:
+            self.deploy_registry_files = self.config.get(section, 'deploy-registry-files').strip()
+        except NoOptionError:
+            self.deploy_registry_files = 'true'
+        
         try:
             self.deployment_directory = self.config.get(section, 'deployment-directory').strip()
             self.layer_interface = self.config.get(section, 'layer-interface').strip()
@@ -175,12 +181,16 @@ class StaticDeploymentUtils(object):
         """
         self.context = context
         self.request = request
+        self.section = section
         self._apply_request_modifications(section)
         
         modification_date = self._parse_date(last_triggered)
-
-        self._deploy_registry_files('portal_css', 'styles')
-        self._deploy_registry_files('portal_javascripts', 'scripts')
+        
+        ## Deploy registry files
+        if self.deploy_registry_files == 'true': 
+            self._deploy_registry_files('portal_css', 'styles')
+            self._deploy_registry_files('portal_javascripts', 'scripts')
+        
         self._deploy_skinstool_files(self.skinstool_files)
         self._deploy_views(self.additional_files, is_page=False)
         self._deploy_views(self.additional_pages, is_page=True)
@@ -398,6 +408,9 @@ class StaticDeploymentUtils(object):
         filename = obj.absolute_url_path().lstrip('/')
         if is_page:
             filename = os.path.join(filename, 'index.html')
+        elif isinstance(obj, ATImage):
+            # create path to dump ATImage in original size
+            filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
 
         self._write(filename, content)
         
@@ -424,7 +437,6 @@ class StaticDeploymentUtils(object):
         Deploy resources linked in HTML or CSS.
         """
         portal_url = getToolByName(self.context, 'portal_url')()
-        base_path = base_path
         for url in urls:
             url = url.strip()
             scheme, netloc, path, query, fragment = urlsplit(url)
@@ -448,9 +460,15 @@ class StaticDeploymentUtils(object):
                 continue
 
             obj = self.context.restrictedTraverse(objpath, None)
+            if objpath.rsplit('/', 1)[-1].split('.')[0] == 'image':
+                obj = self.context.restrictedTraverse(objpath.rsplit('.', 1)[0], None)
             if not obj:
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
+            
+            if isinstance(obj, ATImage):
+                # create path to dump ATImage in original size
+                objpath = os.path.join(objpath, 'image.%s' % objpath.rsplit('.', 1)[-1])
 
             content = self._render_obj(obj)
             if content is None:
@@ -482,7 +500,7 @@ class StaticDeploymentUtils(object):
         """
         Write content to file.
         """
-        filename = filename.lstrip('/')
+        filename = filename.lstrip('/') 
 
         if not content:
             log.warning("File '%s' is empty." % filename)

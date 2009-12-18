@@ -6,5 +6,12 @@
         provides="..interfaces.ITransformation"
         for="zope.interface.Interface"
         />
+		
+    <adapter
+        name="change_images_links"
+        factory=".transformations.ChangeImageLinksTransformation"
+        provides="..interfaces.ITransformation"
+        for="zope.interface.Interface"
+        />
 
 </configure>

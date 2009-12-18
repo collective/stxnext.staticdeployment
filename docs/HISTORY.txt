@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.5.1 [2009-12-18]
+------------------
+
+* fixed dumping ATImage in all defined dimensions [radekj]
+* added posibility to turn-off dumping registry files [radekj]
+
 0.5.0 [2009-12-07]
 ------------------
 
