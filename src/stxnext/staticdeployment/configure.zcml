@@ -6,8 +6,9 @@
 
     <five:registerPackage package="." initialize=".initialize" />
 
-    <include package=".browser"/>
-    <include package=".adapters"/>    
+    <include package=".adapters"/>
+	<include package=".app"/>
+	<include package=".browser"/>    
     
     <genericsetup:registerProfile
           name="stxnext.staticdeployment"

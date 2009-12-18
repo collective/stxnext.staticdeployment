@@ -1,11 +1,20 @@
 # -*- coding: utf-8 -*-
 import os, re, logging
-from ConfigParser import ParsingError
+from ConfigParser import ParsingError, NoOptionError
 from BeautifulSoup import BeautifulSoup
 from DateTime import DateTime
 from urllib import unquote
 from HTMLParser import HTMLParseError
 from urlparse import urlsplit
+
+from plone.i18n.normalizer.interfaces import IUserPreferredURLNormalizer
+from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
+from zope.component.interfaces import IResource
+from zope.interface import Interface
+from zope.contentprovider.interfaces import ContentProviderLookupError
+from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+from zope.publisher.browser import applySkin
 
 from OFS.Image import Pdata, Image as OFSImage
 from Products.Archetypes.Field import Image as ImageField
@@ -21,18 +30,12 @@ from Products.CMFPlone import PloneMessageFactory as _
 from Products.CMFPlone.Portal import PloneSite
 from Products.Five import BrowserView
 from Products.PythonScripts.PythonScript import PythonScript
-from Products.statusmessages.message import Message
+from Products.statusmessages.interfaces import IStatusMessage
 
-from plone.i18n.normalizer.interfaces import IUserPreferredURLNormalizer
-from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
-from zope.component.interfaces import IResource
-from zope.interface import Interface
-from zope.contentprovider.interfaces import ContentProviderLookupError
-from zope.publisher.interfaces import NotFound
-
-from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeploymentSettings
+from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeployment
 from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep
-from stxnext.staticdeployment.utils import ConfigParser
+from stxnext.staticdeployment.utils import ConfigParser, get_config_path
+
 
 log = logging.getLogger(__name__)
 
@@ -50,27 +53,43 @@ def _makedirs(path):
     return True
 
 
-class StaticDeploymentView(BrowserView):
+class StaticDeploymentUtils(object):
     """
     View for static deployment.
     """
-    def __init__(self, context, request):
-        super(StaticDeploymentView, self).__init__(context, request)
-        self._read_config()
-        settings = IStaticDeploymentSettings(context)
-        self.base_dir = os.path.normpath(settings.deployment_directory)
-        self.frontend_domain = self.request['BASE1']
-        self.backend_domain = 'http://%s/' % settings.backend_domain
-        self.deployed_resources = []
+    
+    def _apply_request_modifications(self, section):
+        """
+        Apply proper skin name and five skinlayer. 
+        """
+        config_path = os.path.normpath(get_config_path())
+        skins_tool = getToolByName(self.context, 'portal_skins')
+        request_varname = skins_tool.request_varname
+        self._read_config(config_path, section)
 
-    def _read_config(self):
+        layer_interface_path = self.layer_interface.split('.')
+        layer_interface_module = __import__('.'.join(layer_interface_path[:-1]), {}, {}, layer_interface_path[-1])
+        applySkin(self.request, getattr(layer_interface_module, layer_interface_path[-1], None))
+        self.context.changeSkin(self.defaultskin_name, self.request)
+        self.request.set(request_varname, self.defaultskin_name)
+
+        self.base_dir = os.path.normpath(self.deployment_directory)
+        self.deployed_resources = []
+        
+    def revert_request_modifications(self, context, request):
+        """
+        Apply plone default skin name and five skinlayer.
+        """
+        skins_tool = getToolByName(context, 'portal_skins')
+        request_varname = skins_tool.request_varname
+        applySkin(request, IDefaultBrowserLayer)
+        context.changeSkin('Plone Default', request)
+        request.set(request_varname, 'Plone Default')
+
+    def _read_config(self, config_path, section):
         """
         Read config from .ini file.
         """
-        config_path = os.path.join(CLIENT_HOME, '..', '..', 'etc', 'staticdeployment.ini')
-        if not os.path.isfile(config_path):
-            config_path = os.path.join(os.path.dirname(__file__), '..', 'etc', 'staticdeployment.ini')
-
         config_file = open(config_path, 'r')
         self.config = ConfigParser()
         try:
@@ -78,12 +97,34 @@ class StaticDeploymentView(BrowserView):
         except ParsingError, e:
             log.exception("Error when trying to parse '%s'" % config_path)
             return
-
-        self.page_types = self.config.get_as_list('page-types')
-        self.file_types = self.config.get_as_list('file-types')
-        self.skinstool_files = self.config.get_as_list('skinstool-files')
-        self.additional_files = self.config.get_as_list('additional-files')
-        self.additional_pages = self.config.get_as_list('additional-pages')
+        
+        # non required params
+        self.page_types = self.config.get_as_list('page-types', section=section)
+        self.file_types = self.config.get_as_list('file-types', section=section)
+        self.skinstool_files = self.config.get_as_list('skinstool-files', section=section)
+        self.additional_files = self.config.get_as_list('additional-files', section=section)
+        self.additional_pages = self.config.get_as_list('additional-pages', section=section)
+        self.deployment_steps = self.config.get_as_list('deployment-steps', section=section)
+        # required params
+        try:
+            self.deploy_plonesite = self.config.get(section, 'deploy-plonesite').strip()
+        except NoOptionError:
+            self.deploy_plonesite = 'true'
+            
+        try:
+            self.deploy_registry_files = self.config.get(section, 'deploy-registry-files').strip()
+        except NoOptionError:
+            self.deploy_registry_files = 'true'
+        
+        try:
+            self.deployment_directory = self.config.get(section, 'deployment-directory').strip()
+            self.layer_interface = self.config.get(section, 'layer-interface').strip()
+            self.defaultskin_name = self.config.get(section, 'defaultskin-name').strip()
+        except NoOptionError, e:
+            messages = IStatusMessage(self.request)
+            messages.addStatusMessage(_(e.message), type='error')
+            raise e
+        
 
     def _apply_transforms(self, html):
         """
@@ -95,46 +136,68 @@ class StaticDeploymentView(BrowserView):
             html = t(html)
         return html
 
-    def update(self):
+    def _parse_date(self, last_triggered):
         """
-        Update action.
+        Parse modification date passed in request.
         """
-        settings = IStaticDeploymentSettings(self.context)
-
-        last_triggered = settings.last_triggered
         if not last_triggered:
-            return self.full()
+            return None
         try:
             last_triggered_date = DateTime(last_triggered)
             if last_triggered_date.isFuture():
                 raise DateTime.DateError
-        except (SyntaxError, DateTime.DateError):
-            msg = Message(_(u'Last triggered date is in wrong format!'), type='error')
-            msg = msg.encode().encode('base64').strip()
-            return self.request.response.redirect(self.backend_domain + "@@staticdeployment-controlpanel?msg=" + msg)
+        except (SyntaxError, DateTime.DateError), e:
+            messages = IStatusMessage(self.request)
+            message = _(u'Wrong format of last static deployment date.')
+            messages.addStatusMessage(message, type='error')
+            raise e
+        
+        return last_triggered_date
 
-        return self.full(last_triggered_date)
+    def initial_resources_tools_mode(self, context):
+        """
+        Set debug mode for css and js tools and returns initial values
+        """
+        css_tool = getToolByName(context, 'portal_css')
+        js_tool = getToolByName(context, 'portal_javascripts')
+        initial_debugmode = css_tool.getDebugMode(), js_tool.getDebugMode()
+        if initial_debugmode[0]: css_tool.setDebugMode(False)
+        if initial_debugmode[1]: js_tool.setDebugMode(False)
+        return initial_debugmode
+    
+    def revert_resources_tools_mode(self, context, initial_debugmode=(True, True)):
+        """
+        Set initial mode for css and js tools.
+        """
+        css_tool = getToolByName(context, 'portal_css')
+        js_tool = getToolByName(context, 'portal_javascripts')
+        if initial_debugmode[0]: css_tool.setDebugMode(True)
+        if initial_debugmode[1]: js_tool.setDebugMode(True)
+        
 
-    def full(self, modification_date=None):
+    def deploy(self, context, request, section, last_triggered=None):
         """
         Deploy whole site as static content.
         """
-        ## turn off debug mode, but remember state first
-        css_tool = getToolByName(self.context, 'portal_css')
-        js_tool = getToolByName(self.context, 'portal_javascripts')
-        initial_debugmode = css_tool.getDebugMode(), js_tool.getDebugMode()
-
-        if initial_debugmode[0]: css_tool.setDebugMode(False)
-        if initial_debugmode[1]: js_tool.setDebugMode(False)
-
-        self._deploy_registry_files('portal_css', 'styles')
-        self._deploy_registry_files('portal_javascripts', 'scripts')
+        self.context = context
+        self.request = request
+        self.section = section
+        self._apply_request_modifications(section)
+        
+        modification_date = self._parse_date(last_triggered)
+        
+        ## Deploy registry files
+        if self.deploy_registry_files == 'true': 
+            self._deploy_registry_files('portal_css', 'styles')
+            self._deploy_registry_files('portal_javascripts', 'scripts')
+        
         self._deploy_skinstool_files(self.skinstool_files)
         self._deploy_views(self.additional_files, is_page=False)
         self._deploy_views(self.additional_pages, is_page=True)
 
         ## Deploy Plone Site
-        self._deploy_site(self.context)
+        if self.deploy_plonesite == 'true':
+            self._deploy_site(self.context)
 
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
@@ -151,20 +214,13 @@ class StaticDeploymentView(BrowserView):
         ## find and run additional deployment steps
         steps = getAdapters((self.context,), IDeploymentStep)
         for step_name, step in steps:
-            step.update(self, modification_date)
-            step()
+            if step_name in self.deployment_steps:
+                step.update(self, modification_date)
+                step()
 
-        settings = IStaticDeploymentSettings(self.context)
+        settings = IStaticDeployment(self.context)
         settings.last_triggered = unicode(DateTime().strftime('%Y/%m/%d %H:%M:%S'))
 
-        ## turn debug mode to initial state
-        if initial_debugmode[0]: css_tool.setDebugMode(True)
-        if initial_debugmode[1]: js_tool.setDebugMode(True)
-
-        ## lets return to backend
-        msg = Message(_(u'Deployment finished!'), type='info')
-        msg = msg.encode().encode('base64').strip()
-        return self.request.response.redirect(self.backend_domain + "@@staticdeployment-controlpanel?msg=" + msg)
 
     def _deploy_registry_files(self, registry_type, resource_type):
         """
@@ -174,11 +230,9 @@ class StaticDeploymentView(BrowserView):
         registry = registry_view.registry()
         resources = getattr(registry_view, resource_type)()
 
+        portal_url = getToolByName(self.context, 'portal_url')()
         for resource in resources:
-            if not resource['src'].startswith(self.frontend_domain):
-                continue
-
-            filename = resource['src'].replace(self.frontend_domain, '')
+            filename = resource['src'].replace(portal_url, '')
             try:
                 content = registry.getResourceContent(os.path.basename(filename), self.context)
             except TypeError:
@@ -212,6 +266,13 @@ class StaticDeploymentView(BrowserView):
         Deploy views of context as pages.
         """
         for fullview_name in views:
+            
+            fullview_path = None
+            fullview_name_args = fullview_name.split('|')
+            if len(fullview_name_args) > 1:
+                fullview_name = fullview_name_args[0]
+                fullview_path = fullview_name_args[1]
+            
             context = self.context
             context_path = os.path.dirname(fullview_name)
             view_name = os.path.basename(fullview_name)
@@ -230,7 +291,7 @@ class StaticDeploymentView(BrowserView):
             if is_page:
                 filename = os.path.join(filename, 'index.html')
 
-            self._write(filename, content)
+            self._write(filename, content, fullview_path)
 
     def _render_obj(self, obj):
         """
@@ -347,6 +408,9 @@ class StaticDeploymentView(BrowserView):
         filename = obj.absolute_url_path().lstrip('/')
         if is_page:
             filename = os.path.join(filename, 'index.html')
+        elif isinstance(obj, ATImage):
+            # create path to dump ATImage in original size
+            filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
 
         self._write(filename, content)
         
@@ -372,7 +436,7 @@ class StaticDeploymentView(BrowserView):
         """
         Deploy resources linked in HTML or CSS.
         """
-        base_path = base_path
+        portal_url = getToolByName(self.context, 'portal_url')()
         for url in urls:
             url = url.strip()
             scheme, netloc, path, query, fragment = urlsplit(url)
@@ -380,7 +444,7 @@ class StaticDeploymentView(BrowserView):
                 ## internal anchor
                 continue
 
-            if netloc and netloc != self.frontend_domain:
+            if netloc and netloc != portal_url:
                 ## external link
                 continue
 
@@ -396,9 +460,15 @@ class StaticDeploymentView(BrowserView):
                 continue
 
             obj = self.context.restrictedTraverse(objpath, None)
+            if objpath.rsplit('/', 1)[-1].split('.')[0] == 'image':
+                obj = self.context.restrictedTraverse(objpath.rsplit('.', 1)[0], None)
             if not obj:
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
+            
+            if isinstance(obj, ATImage):
+                # create path to dump ATImage in original size
+                objpath = os.path.join(objpath, 'image.%s' % objpath.rsplit('.', 1)[-1])
 
             content = self._render_obj(obj)
             if content is None:
@@ -430,7 +500,7 @@ class StaticDeploymentView(BrowserView):
         """
         Write content to file.
         """
-        filename = filename.lstrip('/')
+        filename = filename.lstrip('/') 
 
         if not content:
             log.warning("File '%s' is empty." % filename)
