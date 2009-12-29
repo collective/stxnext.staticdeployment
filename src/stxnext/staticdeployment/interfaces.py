@@ -4,6 +4,12 @@ Interfaces used in project.
 """
 from zope.interface import Interface
 
+class IStaticDeploymentUtils(Interface):
+    """
+    Functnions neccesery to deploy static content
+    """
+    
+
 class ITransformation(Interface):
     """
     Transformation of some text.
