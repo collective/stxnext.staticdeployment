@@ -201,12 +201,12 @@ class StaticDeploymentUtils(object):
 
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
-        brains = catalog(meta_type=self.page_types, modified={'query':[modification_date], 'range':'min'})
+        brains = catalog(meta_type=self.page_types, modified={'query':[modification_date], 'range':'min'}, review_state=['published'])
         for brain in brains:
             obj = brain.getObject()
             self._deploy_content(obj, is_page=True)
 
-        brains = catalog(meta_type=self.file_types, modified={'query':[modification_date], 'range':'min'})
+        brains = catalog(meta_type=self.file_types, modified={'query':[modification_date], 'range':'min'}, review_state=['published'])
         for brain in brains:
             obj = brain.getObject()
             self._deploy_content(obj, is_page=False)
@@ -363,13 +363,13 @@ class StaticDeploymentUtils(object):
                 view = queryMultiAdapter((obj, self.request), name=view_name)
                 if view:
                     try:
-                        return view()
+                        return view.context()
                     except ContentProviderLookupError:
                         pass
 
                 view = obj.restrictedTraverse(view_name, None)
                 if view:
-                    return view()
+                    return view.context()
 
                 try:
                     return obj()

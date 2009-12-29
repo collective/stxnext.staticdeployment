@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.2 [2009-12-29]
+------------------
+
+* deploying only content in 'published' state [radekj]
+
 0.5.1 [2009-12-18]
 ------------------
 
