@@ -8,12 +8,6 @@
     	permission="cmf.ManagePortal"
     	class=".staticdeployment.StaticDeploymentForm"
     	/>
-     
-    <adapter
-     	for="Products.CMFPlone.interfaces.IPloneSiteRoot"
-     	provides=".staticdeployment.IStaticDeploymentSettings"
-     	factory=".staticdeployment.StaticDeploymentSettingsAdapter"
-     	/>
     
     <adapter
      	for="Products.CMFPlone.interfaces.IPloneSiteRoot"
@@ -21,4 +15,14 @@
      	factory=".staticdeployment.StaticDeploymentAdapter"
      	/>
 
+	<utility
+	    component=".staticdeployment.ConfigSectionsVocabularyFactory"
+	    name="stxnext.staticdeployment.vocabularies.ConfigSections"
+	    />
+
+	<utility
+	    component=".staticdeployment.DeploymentModeVocabularyFactory"
+	    name="stxnext.staticdeployment.vocabularies.DeploymentMode"
+	    />
+		
 </configure>
