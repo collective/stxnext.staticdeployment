@@ -116,6 +116,10 @@ class StaticDeploymentUtils(object):
         except NoOptionError:
             self.deploy_registry_files = 'true'
         
+        self.deployable_review_states = self.config.get_as_list('deployable-review-states', section=section)
+        if not self.deployable_review_states:
+            self.deployable_review_states = ['published']
+        
         try:
             self.deployment_directory = self.config.get(section, 'deployment-directory').strip()
             self.layer_interface = self.config.get(section, 'layer-interface').strip()
@@ -201,15 +205,17 @@ class StaticDeploymentUtils(object):
 
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
-        brains = catalog(meta_type=self.page_types, modified={'query':[modification_date], 'range':'min'}, review_state=['published'])
+        brains = catalog(meta_type=self.page_types, modified={'query':[modification_date], 'range':'min'})
         for brain in brains:
-            obj = brain.getObject()
-            self._deploy_content(obj, is_page=True)
+            if not brain.review_state or brain.review_state in self.deployable_review_states:
+                obj = brain.getObject()
+                self._deploy_content(obj, is_page=True)
 
-        brains = catalog(meta_type=self.file_types, modified={'query':[modification_date], 'range':'min'}, review_state=['published'])
+        brains = catalog(meta_type=self.file_types, modified={'query':[modification_date], 'range':'min'})
         for brain in brains:
-            obj = brain.getObject()
-            self._deploy_content(obj, is_page=False)
+            if not brain.review_state or brain.review_state in self.deployable_review_states:
+                obj = brain.getObject()
+                self._deploy_content(obj, is_page=False)
 
         ## find and run additional deployment steps
         steps = getAdapters((self.context,), IDeploymentStep)
