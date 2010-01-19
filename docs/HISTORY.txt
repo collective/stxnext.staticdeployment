@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.4 [2010-01-19]
+------------------
+
+* fixed dumping images is all defined dimensions [radekj]
+
 0.5.3 [2010-01-08]
 ------------------
 

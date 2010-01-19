@@ -9,9 +9,7 @@ from Products.ATContentTypes.content.image import ATImage
 
 from stxnext.staticdeployment.interfaces import ITransformation
 
-
-#SRC_PATTERN = re.compile(r"<\s*(img|a)\s+[^>]*(src|href)\s*=\s*[\"']?([^\"' >]+\.(?:png|gif|jpg))[\"' >]")
-SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*[\"']?([^\"' >]+\.(?:png|gif|jpg))[\"' >]")
+SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+\.(?:png|gif|jpg)[\"'])")
 
 class Transformation(object):
     implements(ITransformation)
@@ -42,9 +40,9 @@ class ChangeImageLinksTransformation(Transformation):
     def __call__(self, text):
         matches = SRC_PATTERN.findall(text)
         for match in set(matches):
-            match_path = match.replace('../', '').encode('utf-8')
+            match_path = match.strip('"').strip("'").replace('../', '').encode('utf-8')
             obj = self.context.restrictedTraverse(match_path.lstrip('/'), None)
             if obj and isinstance(obj, ATImage):
-                text = text.replace(match, match + '/image.%s' % match.rsplit('.', 1)[-1])
+                text = text.replace(match, match[:-1] + '/image.%s' % match.rsplit('.', 1)[-1])
         return text
     
