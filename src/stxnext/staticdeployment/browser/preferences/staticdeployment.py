@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, shutil, logging
+import os, shutil, logging, traceback
 from ConfigParser import ParsingError
 
 from plone.app.controlpanel.events import ConfigurationChangedEvent
@@ -206,6 +206,7 @@ class StaticDeploymentForm(ControlPanelForm):
                         message = _(u'Succesfull deployment for section %s' % section)
                         messages.addStatusMessage(message, type='info')
                     except Exception, e:
+                        traceback.print_exc()
                         message = _(u'Error while deploying section %s: %s' % (section, e))
                         messages.addStatusMessage(message, type='error')
 
