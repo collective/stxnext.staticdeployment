@@ -375,7 +375,10 @@ class StaticDeploymentUtils(object):
 
                 view = obj.restrictedTraverse(view_name, None)
                 if view:
-                    return view.context()
+                    try:
+                        return view.context()
+                    except AttributeError:
+                        view()
 
                 try:
                     return obj()
