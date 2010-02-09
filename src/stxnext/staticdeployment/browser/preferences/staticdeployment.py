@@ -30,6 +30,7 @@ from stxnext.staticdeployment.utils import get_config_path, ConfigParser
 log = logging.getLogger(__name__)
 
 
+
 class IStaticDeployment(Interface):
     """
     Static deployment manage form.
@@ -206,7 +207,7 @@ class StaticDeploymentForm(ControlPanelForm):
                         message = _(u'Succesfull deployment for section %s' % section)
                         messages.addStatusMessage(message, type='info')
                     except Exception, e:
-                        traceback.print_exc()
+                        log.error('Error while deploying section %s: \n %s' % (section, traceback.format_exc()))
                         message = _(u'Error while deploying section %s: %s' % (section, e))
                         messages.addStatusMessage(message, type='error')
 

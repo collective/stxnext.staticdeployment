@@ -10,7 +10,7 @@ def get_config_path():
     """
     config_path = os.path.join(CLIENT_HOME, '..', '..', 'etc', 'staticdeployment.ini')
     if not os.path.isfile(config_path):
-        config_path = os.path.join(os.path.dirname(__file__), '..', 'etc', 'staticdeployment.ini')
+        config_path = os.path.join(os.path.dirname(__file__), 'etc', 'staticdeployment.ini')
     return config_path
 
 class ConfigParser(GenericConfigParser):
