@@ -428,18 +428,30 @@ class StaticDeploymentUtils(object):
             return
          
         for field in obj.schema.fields():
-            if field.type != 'image':
-                continue
-            sizes = field.getAvailableSizes(field)
-            for scalename in sizes.keys():
-                image =  field.getScale(obj, scale=scalename)
-                if image:
-                    filename = image.getId()
+            if field.type == 'image':
+                sizes = field.getAvailableSizes(field)
+                for scalename in sizes.keys():
+                    image =  field.getScale(obj, scale=scalename)
+                    if image:
+                        filename = image.getId()
+                        dir_path = obj.absolute_url_path().lstrip('/')
+                        file_path = os.path.join(dir_path, filename)
+                        content = self._render_obj(image)
+                        if content:
+                            self._write(file_path, content)
+                            
+            elif field.type == 'file' and obj.meta_type not in self.file_types:
+                file_instance = field.getAccessor(obj)()
+                if file_instance:
+                    filename = field.getName()
                     dir_path = obj.absolute_url_path().lstrip('/')
                     file_path = os.path.join(dir_path, filename)
-                    content = self._render_obj(image)
-                    if content:
-                        self._write(file_path, content)
+                    if hasattr(file_instance, 'data'):
+                        content = self._render_obj(str(file_instance.data))
+                        if content:
+                            self._write(file_path, content)
+            else:
+                continue
 
     def _deploy_resources(self, urls, base_path):
         """
