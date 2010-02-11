@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.7 [2010-02-11]
+------------------
+
+* fixed dumping file fields content [radekj]
+
 0.5.6 [2010-02-10]
 ------------------
 
