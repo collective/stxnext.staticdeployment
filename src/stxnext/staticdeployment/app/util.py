@@ -430,7 +430,9 @@ class StaticDeploymentUtils(object):
         for field in obj.schema.fields():
             if field.type == 'image':
                 sizes = field.getAvailableSizes(field)
-                for scalename in sizes.keys():
+                scalenames = sizes.keys()
+                scalenames.append(None)
+                for scalename in scalenames:
                     image =  field.getScale(obj, scale=scalename)
                     if image:
                         filename = image.getId()
