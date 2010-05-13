@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os, re, logging
+from AccessControl.PermissionRole import rolesForPermissionOn
 from ConfigParser import ParsingError, NoOptionError
 from BeautifulSoup import BeautifulSoup
 from DateTime import DateTime
@@ -205,17 +206,34 @@ class StaticDeploymentUtils(object):
 
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
+        
         brains = catalog(meta_type=self.page_types, modified={'query':[modification_date], 'range':'min'})
         for brain in brains:
             if not brain.review_state or brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
-                self._deploy_content(obj, is_page=True)
-
+                chain = obj.aq_chain
+                exclude = False
+                for subobj in chain:
+                    if IBaseObject.providedBy(subobj) or isinstance(subobj, PloneSite):
+                        if not 'Anonymous' in rolesForPermissionOn('View', subobj):
+                            exclude = True
+                            break
+                if not exclude:
+                    self._deploy_content(obj, is_page=True)
+        
         brains = catalog(meta_type=self.file_types, modified={'query':[modification_date], 'range':'min'})
         for brain in brains:
             if not brain.review_state or brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
-                self._deploy_content(obj, is_page=False)
+                chain = obj.aq_chain
+                exclude = False
+                for subobj in chain:
+                    if IBaseObject.providedBy(subobj) or isinstance(subobj, PloneSite):
+                        if not 'Anonymous' in rolesForPermissionOn('View', subobj):
+                            exclude = True
+                            break
+                if not exclude:
+                    self._deploy_content(obj, is_page=False)
 
         ## find and run additional deployment steps
         steps = getAdapters((self.context,), IDeploymentStep)

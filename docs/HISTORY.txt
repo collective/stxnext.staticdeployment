@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.9 [2010-05-13]
+------------------
+
+* omiting deploying objects without view permission for anonymuos user in the whole aq_chain [radekj]
+
 0.5.8 [2010-05-08]
 ------------------
 
