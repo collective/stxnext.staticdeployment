@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.10 [2010-05-24]
+------------------
+
+* fixed transformation of images links [radekj]
+
 0.5.9 [2010-05-13]
 ------------------
 
