@@ -13,6 +13,6 @@
 		    url_expr="string:${portal_url}/@@staticdeployment-controlpanel"
 		    visible="True"
 		    i18n:attributes="title">
-			<permission>Manage portal</permission>
+			<permission>Synchro Executor</permission>
 		</configlet>
 </object>
