@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.6.0 [2010-06-16]
+------------------
+
+* created 'Static exporter' global role allowing to perform export action
+
 0.5.10 [2010-05-24]
 ------------------
 
