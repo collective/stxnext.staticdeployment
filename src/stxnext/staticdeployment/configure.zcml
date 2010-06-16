@@ -5,6 +5,7 @@
     i18n_domain="stxnext.varnishpurger">
 
     <five:registerPackage package="." initialize=".initialize" />
+	<include package="." file="permissions.zcml" />
 
     <include package=".adapters"/>
 	<include package=".app"/>

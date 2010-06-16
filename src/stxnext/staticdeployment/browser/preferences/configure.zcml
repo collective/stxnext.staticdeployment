@@ -5,7 +5,7 @@
     <browser:page
     	for="Products.CMFPlone.interfaces.IPloneSiteRoot"
     	name="staticdeployment-controlpanel"
-    	permission="cmf.ManagePortal"
+    	permission="static.Export"
     	class=".staticdeployment.StaticDeploymentForm"
     	/>
     
