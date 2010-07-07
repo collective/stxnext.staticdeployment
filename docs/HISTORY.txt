@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.7.0 [2010-07-07]
+------------------
+
+* asynchronous submitting of the deployment form [radekj]
+* created polish translations [radekj]
+
 0.6.0 [2010-06-16]
 ------------------
 
