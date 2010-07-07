@@ -5,9 +5,16 @@
     <browser:page
     	for="Products.CMFPlone.interfaces.IPloneSiteRoot"
     	name="staticdeployment-controlpanel"
-    	permission="cmf.ManagePortal"
+    	permission="static.Export"
     	class=".staticdeployment.StaticDeploymentForm"
     	/>
+		
+	<adapter
+        for=".staticdeployment.IStaticdeploymentPloneControlPanelForm"
+        factory=".staticdeployment.controlpanel_named_template_adapter"
+        name="default"
+        provides="zope.formlib.namedtemplate.INamedTemplate"
+        />
     
     <adapter
      	for="Products.CMFPlone.interfaces.IPloneSiteRoot"
