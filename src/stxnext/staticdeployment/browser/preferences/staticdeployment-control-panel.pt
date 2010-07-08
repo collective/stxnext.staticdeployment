@@ -33,7 +33,7 @@
 				
 				<dl id="export-running" class="portalMessage warning" style="display:none;"
 					tal:attributes="style python: check_mutex() and 'display:none' or 'display:block'">
-					<dd><img src="/spinner.gif" /> <i18n:label translate="">Deployment is being executed</i18n:label></dd>
+					<dd><img src="++resource++stxnext.staticdeployment/deployment_spinner.gif" /> <i18n:label translate="">Deployment is being executed</i18n:label></dd>
 				</dl>
 				<dl id="export-params-error" class="portalMessage warning" style="display:none;">
 					<dt i18n:translate="">Warning</dt>
