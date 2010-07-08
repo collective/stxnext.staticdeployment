@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-import os, shutil, logging, traceback
+import os, shutil, logging, traceback, thread
 from ConfigParser import ParsingError
+from datetime import datetime
 
 from plone.app.controlpanel.events import ConfigurationChangedEvent
 from plone.app.controlpanel.form import ControlPanelForm
+from plone.app.form import named_template_adapter
 from plone.app.form.validators import null_validator
 from plone.app.form.widgets import MultiCheckBoxWidget
 from plone.protect import CheckAuthenticator
@@ -19,16 +21,27 @@ from Products.CMFCore.utils import getToolByName
 from Products.CMFDefault.formlib.schema import ProxyFieldProperty, SchemaAdapterBase
 from Products.CMFDefault.formlib.vocabulary import StaticVocabulary
 from Products.CMFDefault.formlib.widgets import ChoiceRadioWidget
-from Products.CMFPlone import PloneMessageFactory as _
+from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from Products.statusmessages.interfaces import IStatusMessage
 from Products.statusmessages.message import decode as message_decode
 
 from stxnext.staticdeployment.interfaces import IStaticDeploymentUtils
 from stxnext.staticdeployment.utils import get_config_path, ConfigParser
+from stxnext.staticdeployment.browser import DeployedBase
 
+from zope.i18nmessageid import MessageFactory
+_ = MessageFactory('stxnext.staticdeployment')
 
+mutex = thread.allocate_lock()
 log = logging.getLogger(__name__)
 
+_template = ViewPageTemplateFile('staticdeployment-control-panel.pt')
+controlpanel_named_template_adapter = named_template_adapter(_template)
+
+
+class IStaticdeploymentPloneControlPanelForm(Interface):
+    """
+    """
 
 
 class IStaticDeployment(Interface):
@@ -116,16 +129,25 @@ class MultiCheckBoxVocabularyWidget(MultiCheckBoxWidget):
             field.value_type.vocabulary, request)
 
 # form
-class StaticDeploymentForm(ControlPanelForm):
+class StaticDeploymentForm(ControlPanelForm, DeployedBase):
     """
     Static deployment form.
     """
+    implements(IStaticdeploymentPloneControlPanelForm)
     label = _('Static deployment')
     description = _(u'')
+    id = u'static-deployment-form'
     form_name = _(u'Static deployment panel')
     form_fields = FormFields(IStaticDeployment)
     form_fields['section_choice'].custom_widget = MultiCheckBoxVocabularyWidget
     form_fields['deployment'].custom_widget = ChoiceRadioWidget
+    
+    def getAllEntries(self):
+        """ """
+        return self.storage.__iter__()
+    
+    def store(self, date, username, action, clear, full, status, errmsg=None):
+        return self.storage.add(date, username, action, clear, full, status, errmsg)
     
     def setUpWidgets(self, ignore_request=False):
         super(StaticDeploymentForm, self).setUpWidgets(ignore_request=ignore_request)
@@ -154,11 +176,12 @@ class StaticDeploymentForm(ControlPanelForm):
         url = getMultiAdapter((self.context, self.request), name='absolute_url')()
         return self.request.response.redirect(url + '/plone_control_panel')
 
-    def _on_save(self, data):
+    def _locked_on_save(self, data):
         """
         Do static deployment.
         """
         messages = IStatusMessage(self.request)
+        username = getToolByName(self.context, 'portal_membership').getMemberInfo().get('username', '')
         
         config_path = os.path.normpath(get_config_path())
         config_file = open(config_path, 'r')
@@ -206,10 +229,13 @@ class StaticDeploymentForm(ControlPanelForm):
                         deployment_utils.deploy(self.context, self.request, section, date)
                         message = _(u'Succesfull deployment for section %s' % section)
                         messages.addStatusMessage(message, type='info')
+                        self.store(datetime.now(), username, section, data['delete_previous'], data['deployment'], 1)
+                        
                     except Exception, e:
                         log.error('Error while deploying section %s: \n %s' % (section, traceback.format_exc()))
                         message = _(u'Error while deploying section %s: %s' % (section, e))
                         messages.addStatusMessage(message, type='error')
+                        self.store(datetime.now(), username, section, data['delete_previous'], data['deployment'], 0, str(e))
 
             # reverting initial resource tools settings and request modifications  
             finally:
@@ -217,3 +243,13 @@ class StaticDeploymentForm(ControlPanelForm):
                 deployment_utils.revert_resources_tools_mode(self.context, initial_debugmode)
                 deployment_utils.revert_request_modifications(self.context, self.request)
 
+    def _on_save(self, data):
+        """
+        """
+        if not mutex.locked():
+            try:
+                mutex.acquire()
+                self._locked_on_save(data)
+            finally:
+                mutex.release()
+            
