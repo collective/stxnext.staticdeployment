@@ -50,7 +50,7 @@ class IStaticDeployment(Interface):
     """
     section_choice = Tuple(
         title=_('Choose configuration section'),
-        required=False,
+        required=True,
         missing_value=set(),
         value_type=Choice(
             vocabulary="stxnext.staticdeployment.vocabularies.ConfigSections")
@@ -70,7 +70,7 @@ class IStaticDeployment(Interface):
 
     deployment = Choice(
         title=_('Deploy static version of website'),
-        required=False,
+        required=True,
         description=_(u'Choose if you want to deploy all content or update content modified since last static deployment'),
         vocabulary='stxnext.staticdeployment.vocabularies.DeploymentMode',
         )
