@@ -207,7 +207,10 @@ class StaticDeploymentUtils(object):
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
         
-        brains = catalog(meta_type=self.page_types, modified={'query':[modification_date], 'range':'min'})
+        brains = catalog(meta_type=self.page_types,
+                         modified={'query':[modification_date], 'range':'min'},
+                         effectiveRange = DateTime(),
+                         )
         for brain in brains:
             if not brain.review_state or brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
@@ -221,7 +224,10 @@ class StaticDeploymentUtils(object):
                 if not exclude:
                     self._deploy_content(obj, is_page=True)
         
-        brains = catalog(meta_type=self.file_types, modified={'query':[modification_date], 'range':'min'})
+        brains = catalog(meta_type=self.file_types,
+                         modified={'query':[modification_date], 'range':'min'},
+                         effectiveRange = DateTime(),
+                         )
         for brain in brains:
             if not brain.review_state or brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
