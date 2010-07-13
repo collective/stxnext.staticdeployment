@@ -31,6 +31,14 @@
                     <dd tal:content="view/status" />
                 </dl>
 				
+				<dl id="export-running-error" class="portalMessage error" style="display:none;">
+					<dt i18n:translate="">Error</dt>
+					<dd i18n:translate="">The action of generating is already running</dd>
+				</dl>
+				<dl id="export-queued-info" class="portalMessage info" style="display:none;">
+					<dt i18n:translate="">Info</dt>
+					<dd i18n:translate="">The action has been queued</dd>
+				</dl>
 				<dl id="export-running" class="portalMessage warning" style="display:none;"
 					tal:attributes="style python: check_mutex() and 'display:none' or 'display:block'">
 					<dd><img src="++resource++stxnext.staticdeployment/deployment_spinner.gif" /> <i18n:label translate="">Deployment is being executed</i18n:label></dd>

@@ -86,8 +86,8 @@ msgid "Last static deployment date"
 msgstr "Data poprzedniego eksportu"
 
 #: ./browser/preferences/staticdeployment.py:60
-msgid "Last static deployment date - format YYYY/MM/DD"
-msgstr "Data poprzedniego eksportu w formacie RRRR/MM/DD"
+msgid "Last static deployment date - format YYYY/MM/DD HH:MM"
+msgstr "Data poprzedniego eksportu w formacie RRRR/MM/DD GG:MM"
 
 #: ./browser/preferences/staticdeployment-control-panel.pt:212
 msgid "Remove previous"
@@ -181,3 +181,12 @@ msgstr "Poprawny eksport"
 #. Default: "Username"
 msgid "Username"
 msgstr "Użytkownik"
+
+#. Default: "The action of generating is already running"
+msgid "The action of generating is already running"
+msgstr "Nie można wykonać akcji, ponieważ nie zakończyła się wykonywać poprzednio wywołana akcja generowania wersji staytcznej"
+
+#. Default: "The action has been queued"
+msgid "The action has been queued"
+msgstr "Akcja została zakolejkowana"
+

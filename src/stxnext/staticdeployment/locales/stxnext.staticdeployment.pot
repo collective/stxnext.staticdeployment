@@ -90,7 +90,7 @@ msgid "Last static deployment date"
 msgstr ""
 
 #: ./browser/preferences/staticdeployment.py:60
-msgid "Last static deployment date - format YYYY/MM/DD"
+msgid "Last static deployment date - format YYYY/MM/DD HH:MM"
 msgstr ""
 
 #: ./browser/preferences/staticdeployment-control-panel.pt:212
@@ -185,4 +185,13 @@ msgstr ""
 #. Default: "Username"
 msgid "Username"
 msgstr ""
+
+#. Default: "The action of generating is already running"
+msgid "The action of generating is already running"
+msgstr ""
+
+#. Default: "The action has been queued"
+msgid "The action has been queued"
+msgstr ""
+
 

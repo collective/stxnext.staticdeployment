@@ -715,22 +715,60 @@ jQuery(document).ready(function(){
 		var choice = jQuery.inArray("form.section_choice", names);
 		var deployment = jQuery.inArray("form.deployment", names);
 		
+		var queue = true;
+		var future_queue = false;
+		var queue_date = jQuery.inArray("form.queue_date", names);
+		if (queue_date > 0){
+			queue_date = new Date(data[queue_date].value);
+			now = new Date();
+			var past = now.setMinutes(now.getMinutes() - 5);
+			var date_field = jQuery("#form\\.queue_date");
+			if (queue_date < past){
+				queue = false;
+				date_field.parent().parent().addClass('error');
+				if (date_field.parent().children('.errorText').length == 0){
+					date_field.parent().prepend('<div class="errorText">Data z przeszłości</div>');
+				} 
+			}
+			else{
+				if (queue_date > new Date()){
+					future_queue = true;
+				}
+				queue = true;
+				date_field.parent().parent().removeClass('error');
+				date_field.parent().children('.errorText').remove();
+			}
+		}
+		
 		if (cancel>=0){
 			window.location = '/@@staticdeployment-controlpanel';
 		}
 		
-		if (save>=0 && !($form.hasClass('running'))) {
-			if (choice>=0 && deployment>=0){
-			  	$form.resetForm();
-				busy = true;
-				$form.addClass('running');
-				jQuery('#export-params-error').hide();
-		    	jQuery('#export-running').show();
+		if (save>=0){
+			if (!busy) {
+				if (choice>=0 && deployment>=0 && queue && !future_queue){
+				  	$form.resetForm();
+					busy = true;
+					$form.addClass('running');
+					jQuery('#export-params-error').hide();
+			    	jQuery('#export-running').show();
+				}
+				else{
+					$form.removeClass('running');
+					jQuery('#export-running').hide();
+					jQuery('#export-running-error').hide();
+					if (choice < 0 || deployment < 0 || !queue) {
+						jQuery('#export-params-error').show();
+					}
+					else{
+						jQuery('#export-params-error').hide();
+						jQuery('#export-queued-info').show();
+					}
+				}
 			}
-			else{
-				$form.removeClass('running');
-				jQuery('#export-running').hide();
-				jQuery('#export-params-error').show();
+			else {
+				jQuery('#export-running-error').show();
+				scroll(0,0);
 			}
 		}},
     });
