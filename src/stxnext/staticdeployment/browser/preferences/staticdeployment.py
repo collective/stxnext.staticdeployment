@@ -58,7 +58,7 @@ class IStaticDeployment(Interface):
     
     last_triggered = TextLine(
         title=_(u'Last static deployment date'),
-        description=_(u'Last static deployment date - format YYYY/MM/DD HH:MM'),
+        description=_(u'Last static deployment date - format YYYY/MM/DD HH:MM:SS'),
         default=u'',
         required=False,
         )

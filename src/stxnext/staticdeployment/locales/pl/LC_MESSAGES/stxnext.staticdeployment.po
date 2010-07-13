@@ -86,8 +86,8 @@ msgid "Last static deployment date"
 msgstr "Data poprzedniego eksportu"
 
 #: ./browser/preferences/staticdeployment.py:60
-msgid "Last static deployment date - format YYYY/MM/DD HH:MM"
-msgstr "Data poprzedniego eksportu w formacie RRRR/MM/DD GG:MM"
+msgid "Last static deployment date - format YYYY/MM/DD HH:MM:SS"
+msgstr "Data poprzedniego eksportu w formacie RRRR/MM/DD GG:MM:SS"
 
 #: ./browser/preferences/staticdeployment-control-panel.pt:212
 msgid "Remove previous"

@@ -90,7 +90,7 @@ msgid "Last static deployment date"
 msgstr ""
 
 #: ./browser/preferences/staticdeployment.py:60
-msgid "Last static deployment date - format YYYY/MM/DD HH:MM"
+msgid "Last static deployment date - format YYYY/MM/DD HH:MM:SS"
 msgstr ""
 
 #: ./browser/preferences/staticdeployment-control-panel.pt:212
