@@ -6,7 +6,7 @@ from BeautifulSoup import BeautifulSoup
 from DateTime import DateTime
 from urllib import unquote
 from HTMLParser import HTMLParseError
-from urlparse import urlsplit
+from urlparse import urlsplit, urlparse
 
 from plone.i18n.normalizer.interfaces import IUserPreferredURLNormalizer
 from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
@@ -17,7 +17,7 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.publisher.browser import applySkin
 
-from OFS.Image import Pdata, Image as OFSImage
+from OFS.Image import Pdata, File, Image as OFSImage
 from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
 from Products.ATContentTypes.content.file import ATFile
@@ -43,6 +43,7 @@ log = logging.getLogger(__name__)
 
 RE_WO_1ST_DIRECTORY = re.compile(r'^[^/]+?[/](.*)$')
 RE_CSS_URL = re.compile(r"""url\(["']?([^\)'"]+)['"]?\)""")
+RE_CSS_IMPORTS = re.compile(r"(?<=url\()[a-zA-Z0-9\.\-\/\:\_]+\.(?:css)")
 RE_NOT_BINARY = re.compile(r'\.css$|\.js$|\.txt$|\.html$')
 
 
@@ -207,7 +208,10 @@ class StaticDeploymentUtils(object):
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
         
-        brains = catalog(meta_type=self.page_types, modified={'query':[modification_date], 'range':'min'})
+        brains = catalog(meta_type=self.page_types,
+                         modified={'query':[modification_date], 'range':'min'},
+                         effectiveRange = DateTime(),
+                         )
         for brain in brains:
             if not brain.review_state or brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
@@ -221,7 +225,10 @@ class StaticDeploymentUtils(object):
                 if not exclude:
                     self._deploy_content(obj, is_page=True)
         
-        brains = catalog(meta_type=self.file_types, modified={'query':[modification_date], 'range':'min'})
+        brains = catalog(meta_type=self.file_types,
+                         modified={'query':[modification_date], 'range':'min'},
+                         effectiveRange = DateTime(),
+                         )
         for brain in brains:
             if not brain.review_state or brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
@@ -374,7 +381,7 @@ class StaticDeploymentUtils(object):
             except AttributeError:
                 pass
 
-            if mt in self.file_types or isinstance(obj, (ImageField, OFSImage, Pdata)):
+            if mt in self.file_types or isinstance(obj, (ImageField, OFSImage, Pdata, File)):
                 return self._render_obj(obj.data)
 
             if IBaseObject.providedBy(obj) or isinstance(obj, PloneSite):
@@ -410,7 +417,7 @@ class StaticDeploymentUtils(object):
 
             ## back to initial parents
             self.request['PARENTS'] = initial_parents
-
+        
         log.warning("Not recognized object '%s'!" % repr(obj))
         return None
 
@@ -527,8 +534,12 @@ class StaticDeploymentUtils(object):
             soup = BeautifulSoup(html)
         except HTMLParseError:
             return
-
-        urls = [tag['src'] for tag in soup.findAll(['img', 'input', 'embed'], src=True)]
+        
+        # deploying resources only from local domain (the path don't contain external address) 
+        urls = [tag['src'] for tag in soup.findAll(['img', 'input', 'embed', 'script'], src=True) if not urlparse(tag['src'])[0]]
+        css_imports = RE_CSS_IMPORTS.findall(html)
+        css_imports = [link for link in css_imports if not urlparse(link)[0]]
+        urls = urls + css_imports
         self._deploy_resources(urls, unquote(base_path))
 
     def _parse_css(self, content, base_path=''):
