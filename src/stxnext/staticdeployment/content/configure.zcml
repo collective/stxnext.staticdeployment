@@ -1,0 +1,19 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="stxnext.staticdeployment">
+    
+    <adapter
+    	for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+    	provides=".store.IDeployedStore"
+    	factory=".store.DeployedAdapter"
+    	/>
+
+   	<browser:view
+   		for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+   		name="deployed-clear"
+   		permission="cmf.ManagePortal"
+    	class=".store.DeployedClear"
+    	/>
+		
+</configure>

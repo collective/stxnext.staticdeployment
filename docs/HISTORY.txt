@@ -1,6 +1,43 @@
 Changelog
 =========
 
+0.7.4 [2010-07-15]
+------------------
+
+* deploying images defined in local styles [radekj]
+
+0.7.3 [2010-07-14]
+------------------
+
+* fixed deploying attached css files [radekj]
+
+0.7.2 [2010-07-13]
+------------------
+
+* inputs marked as required [radekj]
+* generating only active content [radekj]
+
+0.7.1 [2010-07-08]
+------------------
+
+* added spinner icon [radekj]
+
+0.7.0 [2010-07-07]
+------------------
+
+* asynchronous submitting of the deployment form [radekj]
+* created polish translations [radekj]
+
+0.6.0 [2010-06-16]
+------------------
+
+* created 'Static exporter' global role allowing to perform export action [radekj]
+
+0.5.10 [2010-05-24]
+------------------
+
+* fixed transformation of images links [radekj]
+
 0.5.9 [2010-05-13]
 ------------------
 
