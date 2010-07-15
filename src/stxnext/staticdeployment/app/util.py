@@ -539,7 +539,8 @@ class StaticDeploymentUtils(object):
         urls = [tag['src'] for tag in soup.findAll(['img', 'input', 'embed', 'script'], src=True) if not urlparse(tag['src'])[0]]
         css_imports = RE_CSS_IMPORTS.findall(html)
         css_imports = [link for link in css_imports if not urlparse(link)[0]]
-        urls = urls + css_imports
+        local_styles = RE_CSS_URL.findall(html)
+        urls = urls + css_imports + local_styles
         self._deploy_resources(urls, unquote(base_path))
 
     def _parse_css(self, content, base_path=''):

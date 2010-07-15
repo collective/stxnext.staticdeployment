@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.4 [2010-07-15]
+------------------
+
+* deploying images defined in local styles [radekj]
+
 0.7.3 [2010-07-14]
 ------------------
 
