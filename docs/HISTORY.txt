@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.5 [2010-07-29]
+------------------
+
+* fixed image links transformation for images with '%20' entity in path [radekj]
+
 0.7.4 [2010-07-15]
 ------------------
 
