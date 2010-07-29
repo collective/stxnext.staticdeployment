@@ -40,7 +40,7 @@ class ChangeImageLinksTransformation(Transformation):
     def __call__(self, text):
         matches = SRC_PATTERN.findall(text)
         for match in set(matches):
-            match_path = match.strip('"').strip("'").replace('../', '').encode('utf-8')
+            match_path = match.strip('"').strip("'").replace('../', '').replace('%20', ' ').encode('utf-8')
             obj = self.context.restrictedTraverse(match_path.lstrip('/'), None)
             if obj and isinstance(obj, ATImage):
                 text = text.replace(match, match[:-1] + '/image.%s' % match.rsplit('.', 1)[-1])

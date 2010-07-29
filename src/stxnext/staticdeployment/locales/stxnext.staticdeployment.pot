@@ -1,0 +1,197 @@
+# --- PLEASE EDIT THE LINES BELOW CORRECTLY ---
+# SOME DESCRIPTIVE TITLE.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2010-07-06 11:38+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI +ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0\n"
+"Language-Code: en\n"
+"Language-Name: English\n"
+"Preferred-Encodings: utf-8 latin1\n"
+"Domain: stxnext.staticdeployment\n"
+
+#: ./browser/preferences/staticdeployment.py:67
+msgid ""
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:174
+msgid "Changes canceled."
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:51
+msgid "Choose configuration section"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:73
+msgid "Choose if you want to deploy all content or update content modified since last static deployment"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:206
+msgid "Couldn't remove files from %s"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:71
+msgid "Deploy static version of website"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:213
+msgid "Deployment"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:36
+msgid "Deployment is being executed"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:215
+msgid "Error message"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:110
+msgid "Error when trying to parse '%s'"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:234
+msgid "Error while deploying section %s: %s"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:210
+msgid "Execution date"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:209
+msgid "Files from path %s have been succesfully removed."
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:89
+msgid "Full deployment"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:28
+msgid "Info"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:40
+msgid "Lack of required parameters"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:206
+msgid "Last executed deployments"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:59
+msgid "Last static deployment date"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:60
+msgid "Last static deployment date - format YYYY/MM/DD HH:MM:SS"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:212
+msgid "Remove previous"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:66
+msgid "Remove previously deployed files"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:211
+msgid "Section"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:136
+msgid "Static deployment"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:139
+msgid "Static deployment panel"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:214
+msgid "Status"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:228
+msgid "Succesfull deployment for section %s"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment.py:90
+msgid "Update deployment"
+msgstr ""
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:39
+msgid "Warning"
+msgstr ""
+
+#: ./app/util.py:156
+msgid "Wrong format of last static deployment date."
+msgstr ""
+
+#. Default: "Cancel"
+#: ./browser/preferences/staticdeployment.py:171
+msgid "label_cancel"
+msgstr ""
+
+#. Default: "(Required)"
+#: ./browser/preferences/staticdeployment-control-panel.pt:101
+msgid "label_required"
+msgstr ""
+
+#. Default: "Save"
+#: ./browser/preferences/staticdeployment.py:164
+msgid "label_save"
+msgstr ""
+
+#. Default: "Up to Site Setup"
+#: ./browser/preferences/staticdeployment-control-panel.pt:52
+msgid "label_up_to_plone_setup"
+msgstr ""
+
+#. Default: "Required"
+#: ./browser/preferences/staticdeployment-control-panel.pt:101
+msgid "title_required"
+msgstr ""
+
+#. Default: "no"
+msgid "no"
+msgstr ""
+
+#. Default: "yes"
+msgid "yes"
+msgstr ""
+
+#. Default: "full_deployment"
+msgid "full_deployment"
+msgstr ""
+
+#. Default: "update_deployment"
+msgid "update_deployment"
+msgstr ""
+
+#. Default: "error"
+msgid "error"
+msgstr ""
+
+#. Default: "succesfull"
+msgid "succesfull"
+msgstr ""
+
+#. Default: "Username"
+msgid "Username"
+msgstr ""
+
+#. Default: "The action of generating is already running"
+msgid "The action of generating is already running"
+msgstr ""
+
+#. Default: "The action has been queued"
+msgid "The action has been queued"
+msgstr ""
+
+
