@@ -42,7 +42,7 @@ class ChangeImageLinksTransformation(Transformation):
         for match in set(matches):
             match_path = match.strip('"').strip("'").replace('../', '').replace('%20', ' ').lstrip('/').encode('utf-8')
             obj = self.context.restrictedTraverse(match_path, None)
-            if obj and isinstance(obj, ATImage) or len(match.split('/')) == 1:
+            if obj and isinstance(obj, ATImage) or len(match_path.split('/')) == 1:
                 text = text.replace(match, match[:-1] + '/image.%s' % match.rsplit('.', 1)[-1])
         return text
     
