@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.6 [2010-11-16]
+------------------
+
+* fixed image links transformation for images with relative path [radekj]
+
 0.7.5 [2010-07-29]
 ------------------
 
