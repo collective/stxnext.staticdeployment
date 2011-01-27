@@ -107,6 +107,7 @@ class StaticDeploymentUtils(object):
         self.additional_files = self.config.get_as_list('additional-files', section=section)
         self.additional_pages = self.config.get_as_list('additional-pages', section=section)
         self.deployment_steps = self.config.get_as_list('deployment-steps', section=section)
+        self.additional_directories = self.config.get_as_list('additional-directories', section=section)
         # required params
         try:
             self.deploy_plonesite = self.config.get(section, 'deploy-plonesite').strip()
