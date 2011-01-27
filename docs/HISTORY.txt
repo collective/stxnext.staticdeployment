@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.7 [2011-01-27]
+------------------
+
+* added possibility to add additional path in configuration file [radekj]
+
 0.7.6 [2010-11-16]
 ------------------
 
