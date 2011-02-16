@@ -33,3 +33,17 @@ class IDeploymentStep(Interface):
         """
         Run deployment.
         """
+
+
+class IExtraDeploymentCondition(Interface):
+    """
+    Allow defining extra conditions for deploying content.
+    
+    It can be used as plugin, that extends standard functionality
+    of stxnext.staticdeployment.
+    """
+
+    def __call__(obj):
+        """
+        Check condition.
+        """

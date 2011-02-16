@@ -34,7 +34,7 @@ from Products.PythonScripts.PythonScript import PythonScript
 from Products.statusmessages.interfaces import IStatusMessage
 
 from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeployment
-from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep
+from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep, IExtraDeploymentCondition
 from stxnext.staticdeployment.utils import ConfigParser, get_config_path
 
 
@@ -208,8 +208,7 @@ class StaticDeploymentUtils(object):
 
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
-        
-        brains = catalog(meta_type=self.page_types,
+        brains = catalog(meta_type=self.page_types + self.file_types,
                          modified={'query':[modification_date], 'range':'min'},
                          effectiveRange = DateTime(),
                          )
@@ -223,25 +222,22 @@ class StaticDeploymentUtils(object):
                         if not 'Anonymous' in rolesForPermissionOn('View', subobj):
                             exclude = True
                             break
+                
+                # extra deployment conditions
                 if not exclude:
-                    self._deploy_content(obj, is_page=True)
-        
-        brains = catalog(meta_type=self.file_types,
-                         modified={'query':[modification_date], 'range':'min'},
-                         effectiveRange = DateTime(),
-                         )
-        for brain in brains:
-            if not brain.review_state or brain.review_state in self.deployable_review_states:
-                obj = brain.getObject()
-                chain = obj.aq_chain
-                exclude = False
-                for subobj in chain:
-                    if IBaseObject.providedBy(subobj) or isinstance(subobj, PloneSite):
-                        if not 'Anonymous' in rolesForPermissionOn('View', subobj):
+                    extra_dep_conds = getAdapters((self.context,), IExtraDeploymentCondition)
+                    for cond_name, condition in extra_dep_conds:
+                        condition.update(self, modification_date)
+                        if not condition(obj):
                             exclude = True
                             break
+                    
                 if not exclude:
-                    self._deploy_content(obj, is_page=False)
+                    if brain.meta_type in self.page_types:
+                        is_page = True
+                    else:
+                        is_page = False
+                    self._deploy_content(obj, is_page=is_page)
 
         ## find and run additional deployment steps
         steps = getAdapters((self.context,), IDeploymentStep)
