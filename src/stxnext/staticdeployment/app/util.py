@@ -10,7 +10,10 @@ from urlparse import urlsplit, urlparse
 
 from plone.i18n.normalizer.interfaces import IUserPreferredURLNormalizer
 from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
-from zope.component.interfaces import IResource
+try:
+    from zope.app.publisher.interfaces import IResource
+except ImportError:
+    from zope.component.interfaces import IResource
 from zope.interface import Interface
 from zope.contentprovider.interfaces import ContentProviderLookupError
 from zope.publisher.interfaces import NotFound
