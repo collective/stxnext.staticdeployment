@@ -5,7 +5,6 @@ from datetime import datetime
 
 from plone.app.controlpanel.events import ConfigurationChangedEvent
 from plone.app.controlpanel.form import ControlPanelForm
-from plone.app.form import named_template_adapter
 from plone.app.form.validators import null_validator
 from plone.app.form.widgets import MultiCheckBoxWidget
 from plone.protect import CheckAuthenticator
@@ -34,9 +33,6 @@ _ = MessageFactory('stxnext.staticdeployment')
 
 mutex = thread.allocate_lock()
 log = logging.getLogger(__name__)
-
-_template = ViewPageTemplateFile('staticdeployment-control-panel.pt')
-controlpanel_named_template_adapter = named_template_adapter(_template)
 
 
 class IStaticdeploymentPloneControlPanelForm(Interface):
@@ -133,6 +129,9 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
     """
     Static deployment form.
     """
+    
+    template = ViewPageTemplateFile('staticdeployment-control-panel.pt')
+    
     implements(IStaticdeploymentPloneControlPanelForm)
     label = _('Static deployment')
     description = _(u'')
