@@ -88,8 +88,8 @@ class StaticDeploymentUtils(object):
         skins_tool = getToolByName(context, 'portal_skins')
         request_varname = skins_tool.request_varname
         applySkin(request, IDefaultBrowserLayer)
-        context.changeSkin('Plone Default', request)
-        request.set(request_varname, 'Plone Default')
+        context.changeSkin(None, request)
+        request.set(request_varname, None)
 
     def _read_config(self, config_path, section):
         """
@@ -510,6 +510,8 @@ class StaticDeploymentUtils(object):
             obj = self.context.restrictedTraverse(objpath, None)
             if objpath.rsplit('/', 1)[-1].split('.')[0] == 'image':
                 obj = self.context.restrictedTraverse(objpath.rsplit('.', 1)[0], None)
+            if not obj:
+                obj = self.context.restrictedTraverse(unquote(objpath), None)
             if not obj:
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
