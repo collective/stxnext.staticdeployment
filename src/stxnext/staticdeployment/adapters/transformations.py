@@ -27,8 +27,8 @@ class RemoveDomainTransformation(Transformation):
     """
 
     def __call__(self, text):
-        text = text.replace(self.context.request['BASE1']+'/', '/')
-        text = text.replace(self.context.request['BASE1'], '/')
+        text = text.replace(self.context.REQUEST['BASE1']+'/', '/')
+        text = text.replace(self.context.REQUEST['BASE1'], '/')
         return text
 
 
