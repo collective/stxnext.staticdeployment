@@ -20,6 +20,16 @@ class ITransformation(Interface):
         Transform given text.
         """
 
+class IPostTransformation(Interface):
+    """
+    Transformation of some text after dropping objects to the file.
+    """
+
+    def __call__(text):
+        """
+        Transform given text.
+        """
+
 
 class IDeploymentStep(Interface):
     """
