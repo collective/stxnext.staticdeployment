@@ -190,3 +190,6 @@ msgstr "Nie można wykonać akcji, ponieważ nie zakończyła się wykonywać po
 msgid "The action has been queued"
 msgstr "Akcja została zakolejkowana"
 
+#: Default: "Static deployment"
+msgid "static_deployment_action_title"
+msgstr "Eksport do wersji statycznej"

@@ -37,7 +37,7 @@ from Products.PythonScripts.PythonScript import PythonScript
 from Products.statusmessages.interfaces import IStatusMessage
 
 from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeployment
-from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep, IExtraDeploymentCondition
+from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep, IExtraDeploymentCondition, IPostTransformation
 from stxnext.staticdeployment.utils import ConfigParser, get_config_path
 
 
@@ -88,8 +88,8 @@ class StaticDeploymentUtils(object):
         skins_tool = getToolByName(context, 'portal_skins')
         request_varname = skins_tool.request_varname
         applySkin(request, IDefaultBrowserLayer)
-        context.changeSkin('Plone Default', request)
-        request.set(request_varname, 'Plone Default')
+        context.changeSkin(None, request)
+        request.set(request_varname, None)
 
     def _read_config(self, config_path, section):
         """
@@ -145,6 +145,17 @@ class StaticDeploymentUtils(object):
         for t_name, t in transformations:
             html = t(html)
         return html
+
+    def _apply_post_transforms(self, html):
+        """
+        Apply post transforms to output html.
+        """
+        transformations = getAdapters((self.context,), IPostTransformation)
+
+        for t_name, t in transformations:
+            html = t(html)
+        return html
+
 
     def _parse_date(self, last_triggered):
         """
@@ -511,6 +522,8 @@ class StaticDeploymentUtils(object):
             if objpath.rsplit('/', 1)[-1].split('.')[0] == 'image':
                 obj = self.context.restrictedTraverse(objpath.rsplit('.', 1)[0], None)
             if not obj:
+                obj = self.context.restrictedTraverse(unquote(objpath), None)
+            if not obj:
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
             
@@ -572,17 +585,20 @@ class StaticDeploymentUtils(object):
             return
 
         if RE_NOT_BINARY.search(filename):
-            content = self._apply_transforms(content)
+            pre_transformated_content = self._apply_transforms(content)
+            post_transformated_content = self._apply_post_transforms(pre_transformated_content)
+        else:
+            pre_transformated_content = post_transformated_content = content
 
         try:
-            content_file.write(content)
+            content_file.write(post_transformated_content)
         finally:
             content_file.close()
 
         log.debug("[*] '%s' saved." % filename)
 
         if filename.endswith('.css'):
-            self._parse_css(content, os.path.dirname(filename))
+            self._parse_css(pre_transformated_content, os.path.dirname(filename))
 
         if filename.endswith('.html'):
-            self._parse_html(content, os.path.dirname(filename))
+            self._parse_html(pre_transformated_content, os.path.dirname(filename))
