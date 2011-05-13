@@ -35,17 +35,19 @@ Configuration
 
 Every website has own configuration (different set of eggs, skin, products etc.) - this I meas as project. But website can have few instances (development, test and production instances). Because of this, configuration is split for two parts: 
 
-* instance parameters:
-- parameters connected to instance - e.g.: domain
-- configured in *Control Panel* - can be edited throw the web (*Site Setup* -> *Static deployment* -> *Settings* tab)
-- form has description and validation - can be used by less experienced users
+ * instance parameters:
+  
+   - parameters connected to instance - e.g.: domain
+   - configured in *Control Panel* - can be edited throw the web (*Site Setup* -> *Static deployment* -> *Settings* tab)
+   - form has description and validation - can be used by less experienced users
 
-* website parameters:
-- stored in INI file
-- created by developer of website
-- can be used by many sites
-- `default configuration`_ (included in egg)
-- default configuration can be overriden by file `${buildout:directory}/etc/staticdeployment.ini`
+ * website parameters:
+  
+   - stored in INI file
+   - created by developer of website
+   - can be used by many sites
+   - `default configuration`_ (included in egg)
+   - default configuration can be overriden by file `${buildout:directory}/etc/staticdeployment.ini`
 
 
 Usage
