@@ -10,22 +10,22 @@ Deploy Plone site to static files.
 Installation
 ============
 
-Edit buildout.cfg and append `stxnext.staticdeployment` to eggs and zcml parameters in instance section::
+Edit buildout.cfg and append ``stxnext.staticdeployment`` to eggs and zcml parameters in instance section::
 
-  [instance]
-  eggs =
-    ...
-    stxnext.staticdeployment
-
-  zcml =
-    ...
-    stxnext.staticdeployment
+	[instance]
+	eggs =
+	  ...
+	  stxnext.staticdeployment
+	
+	zcml =
+	  ...
+	  stxnext.staticdeployment
 
 Instance must be rebuild and restarted::
 
-  ./bin/buildout
-  ./bin/instance stop
-  ./bin/instance start
+	./bin/buildout
+	./bin/instance stop
+	./bin/instance start
 
 This product must be also installed inside Plone site. Do do it, go to *Site Setup* -> *Add/Remove Products*, select checkbox near *stxnext.staticdeployment* and click *Install* button.
 
