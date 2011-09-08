@@ -562,7 +562,7 @@ class StaticDeploymentUtils(object):
         """
         self._deploy_resources(RE_CSS_URL.findall(content), unquote(base_path))
 
-    def _write(self, filename, content, dir_path=None):
+    def _write(self, filename, content, dir_path=None, omit_transform=False):
         """
         Write content to file.
         """
@@ -584,7 +584,7 @@ class StaticDeploymentUtils(object):
             log.exception("Error trying to dump data to '%s' file!" % filename)
             return
 
-        if RE_NOT_BINARY.search(filename):
+        if RE_NOT_BINARY.search(filename) and not omit_transform:
             pre_transformated_content = self._apply_transforms(content)
             post_transformated_content = self._apply_post_transforms(pre_transformated_content)
         else:
