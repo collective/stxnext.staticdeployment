@@ -44,5 +44,8 @@ class ChangeImageLinksTransformation(Transformation):
             obj = self.context.restrictedTraverse(match_path, None)
             if obj and isinstance(obj, ATImage) or len(match_path.split('/')) == 1:
                 text = text.replace(match, match[:-1] + '/image.%s' % match.rsplit('.', 1)[-1])
+            if hasattr(obj, 'getBlobWrapper'):
+                if 'image' in obj.getBlobWrapper().getContentType():
+                    text = text.replace(match, match[:-1] + '/image.%s' % match.rsplit('.', 1)[-1])
         return text
     

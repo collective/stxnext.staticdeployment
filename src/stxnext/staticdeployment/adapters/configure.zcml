@@ -10,7 +10,7 @@
     <adapter
         name="change_images_links"
         factory=".transformations.ChangeImageLinksTransformation"
-        provides="..interfaces.ITransformation"
+        provides="..interfaces.IPostTransformation"
         for="zope.interface.Interface"
         />
 

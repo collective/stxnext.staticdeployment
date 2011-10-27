@@ -456,13 +456,36 @@ class StaticDeploymentUtils(object):
         elif isinstance(obj, ATImage):
             # create path to dump ATImage in original size
             filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
+        elif hasattr(obj, 'getBlobWrapper'):
+            if 'image' in obj.getBlobWrapper().getContentType():
+                filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
 
         self._write(filename, content)
         
         # deploy all sizes of images uploaded for the object
         if not getattr(obj, 'schema', None):
             return
-         
+        
+	if hasattr(obj, 'getBlobWrapper'):
+            blob = obj.getBlobWrapper()
+            if 'image' in blob.getContentType():
+                field = obj.getField('image')
+                if field:
+                    sizes = field.getAvailableSizes(field)
+                    scalenames = sizes.keys()
+                    scalenames.append(None)
+                    for scalename in scalenames:
+                        if not scalename:
+                            continue
+                        image =  field.getScale(obj, scale=scalename)
+                        if image:
+                            filename = image.getId()
+                            dir_path = obj.absolute_url_path().lstrip('/')
+                            file_path = os.path.join(dir_path, filename)
+                            content = self._render_obj(image)
+                            if content:
+                                self._write(file_path, content)
+ 
         for field in obj.schema.fields():
             if field.type == 'image':
                 sizes = field.getAvailableSizes(field)
@@ -526,10 +549,13 @@ class StaticDeploymentUtils(object):
             if not obj:
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
-            
+
             if isinstance(obj, ATImage):
                 # create path to dump ATImage in original size
                 objpath = os.path.join(objpath, 'image.%s' % objpath.rsplit('.', 1)[-1])
+            if hasattr(obj, 'getBlobWrapper'):
+                if 'image' in obj.getBlobWrapper().getContentType():
+                    objpath = os.path.join(objpath, 'image.%s' % objpath.rsplit('.', 1)[-1])
 
             content = self._render_obj(obj)
             if content is None:
