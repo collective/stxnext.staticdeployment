@@ -453,12 +453,12 @@ class StaticDeploymentUtils(object):
         filename = obj.absolute_url_path().lstrip('/')
         if is_page:
             filename = os.path.join(filename, 'index.html')
-        elif isinstance(obj, ATImage):
+        elif isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
             # create path to dump ATImage in original size
-            filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
-        elif hasattr(obj, 'getBlobWrapper'):
-            if 'image' in obj.getBlobWrapper().getContentType():
+            if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif'):
                 filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
+            else:
+                filename = os.path.join(filename, 'image.jpg')
 
         self._write(filename, content)
         
@@ -466,7 +466,7 @@ class StaticDeploymentUtils(object):
         if not getattr(obj, 'schema', None):
             return
         
-	if hasattr(obj, 'getBlobWrapper'):
+        if hasattr(obj, 'getBlobWrapper'):
             blob = obj.getBlobWrapper()
             if 'image' in blob.getContentType():
                 field = obj.getField('image')
@@ -550,12 +550,12 @@ class StaticDeploymentUtils(object):
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
 
-            if isinstance(obj, ATImage):
+            if isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
                 # create path to dump ATImage in original size
-                objpath = os.path.join(objpath, 'image.%s' % objpath.rsplit('.', 1)[-1])
-            if hasattr(obj, 'getBlobWrapper'):
-                if 'image' in obj.getBlobWrapper().getContentType():
+                if objpath.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif'):
                     objpath = os.path.join(objpath, 'image.%s' % objpath.rsplit('.', 1)[-1])
+                else:
+                    objpath = os.path.join(objpath, 'image.jpg')
 
             content = self._render_obj(obj)
             if content is None:
