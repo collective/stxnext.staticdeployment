@@ -455,7 +455,7 @@ class StaticDeploymentUtils(object):
             filename = os.path.join(filename, 'index.html')
         elif isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
             # create path to dump ATImage in original size
-            if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif'):
+            if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
                 filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
             else:
                 filename = os.path.join(filename, 'image.jpg')
@@ -552,7 +552,7 @@ class StaticDeploymentUtils(object):
 
             if isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
                 # create path to dump ATImage in original size
-                if objpath.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif'):
+                if objpath.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
                     objpath = os.path.join(objpath, 'image.%s' % objpath.rsplit('.', 1)[-1])
                 else:
                     objpath = os.path.join(objpath, 'image.jpg')
