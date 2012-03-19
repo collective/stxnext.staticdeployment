@@ -1,0 +1,26 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:five="http://namespaces.zope.org/five"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+	xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="stxnext.staticdeployment">
+
+    <five:registerPackage package="." initialize=".initialize" />
+	<include package="." file="permissions.zcml" />
+	
+	<i18n:registerTranslations directory="locales"/>
+
+    <include package=".adapters"/>
+	<include package=".app"/>
+	<include package=".browser"/>    
+    <include package=".content"/>
+	
+    <genericsetup:registerProfile
+          name="stxnext.staticdeployment"
+          title="stxnext.staticdeployment"
+          directory="profiles/default"
+          description="Extension profile for staticdeployment."
+          provides="Products.GenericSetup.interfaces.EXTENSION"
+        />
+        
+</configure>

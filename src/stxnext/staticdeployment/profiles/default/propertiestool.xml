@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<object name="portal_properties" meta_type="Plone Properties Tool">
+ <object name="site_properties" meta_type="Plone Property Sheet">
+ 
+  <property name="frontend_domain" type="string" purge="False">preview.example.com</property>
+  <property name="backend_domain" type="string" purge="False">admin.example.com</property>
+  <property name="path_to_export" type="string" purge="False">/var/www/example.com/html</property>
+  <property name="last_triggered" type="string"></property>
+  
+ </object>
+</object>
+

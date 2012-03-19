@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<rolemap>
+  <roles>
+    <role name="Static Exporter"/>
+  </roles>
+  <permissions>
+    <permission name="Static export" acquire="False">
+      <role name="Static Exporter"/>
+	  <role name="Manager"/>
+    </permission>
+  </permissions>
+</rolemap>

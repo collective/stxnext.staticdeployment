@@ -1,0 +1,195 @@
+# --- PLEASE EDIT THE LINES BELOW CORRECTLY ---
+# SOME DESCRIPTIVE TITLE.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2010-07-06 11:38+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI +ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0\n"
+"Language-Code: pl\n"
+"Language-Name: Polish\n"
+"Preferred-Encodings: utf-8 latin1\n"
+"Domain: stxnext.staticdeployment\n"
+
+#: ./browser/preferences/staticdeployment.py:174
+msgid "Changes canceled."
+msgstr "Zmiany anulowano."
+
+#: ./browser/preferences/staticdeployment.py:51
+msgid "Choose configuration section"
+msgstr "Wybierz sekcję"
+
+#: ./browser/preferences/staticdeployment.py:73
+msgid "Choose if you want to deploy all content or update content modified since last static deployment"
+msgstr "Wybierz czy chcesz dokonać eksportu całej treści, czy zaktualizować tylko treść zmodyfikowaną od daty poprzedniego eksportu"
+
+#: ./browser/preferences/staticdeployment.py:206
+msgid "Couldn't remove files from %s"
+msgstr "Nie udało się usunąć plików z lokalizacji: %s"
+
+#: ./browser/preferences/staticdeployment.py:71
+msgid "Deploy static version of website"
+msgstr "Eksport treści witryny do wersji statycznej"
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:213
+msgid "Deployment"
+msgstr "Eksport"
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:36
+msgid "Deployment is being executed"
+msgstr "Trwa eksport wersji statycznej"
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:215
+msgid "Error message"
+msgstr "Treść błędu"
+
+#: ./browser/preferences/staticdeployment.py:110
+msgid "Error when trying to parse '%s'"
+msgstr "Wystąpił błąd podczas parsowania pliku konfiguracyjnego: '%s'"
+
+#: ./browser/preferences/staticdeployment.py:234
+msgid "Error while deploying section %s: %s"
+msgstr "Wystąpił błąd podczas eksportowania sekcji %s: %s "
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:210
+msgid "Execution date"
+msgstr "Data wykonania"
+
+#: ./browser/preferences/staticdeployment.py:209
+msgid "Files from path %s have been succesfully removed."
+msgstr "Pliki z lokalizacji %s zostały pomyślnie usunięte."
+
+#: ./browser/preferences/staticdeployment.py:89
+msgid "Full deployment"
+msgstr "Pełen eksport"
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:28
+msgid "Info"
+msgstr "Info"
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:40
+msgid "Lack of required parameters"
+msgstr "Brak wymaganych parametrów"
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:206
+msgid "Last executed deployments"
+msgstr "Ostatnio dokonywane akcje eksportowania"
+
+#: ./browser/preferences/staticdeployment.py:59
+msgid "Last static deployment date"
+msgstr "Data poprzedniego eksportu"
+
+#: ./browser/preferences/staticdeployment.py:60
+msgid "Last static deployment date - format YYYY/MM/DD HH:MM:SS"
+msgstr "Data poprzedniego eksportu w formacie RRRR/MM/DD GG:MM:SS"
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:212
+msgid "Remove previous"
+msgstr "Usunięto poprzednią wersję"
+
+#: ./browser/preferences/staticdeployment.py:66
+msgid "Remove previously deployed files"
+msgstr "Usuń pliki poprzednio wyeksportowanej wersji statycznej"
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:211
+msgid "Section"
+msgstr "Sekcja"
+
+#: ./browser/preferences/staticdeployment.py:136
+msgid "Static deployment"
+msgstr "Eksport treści witryny do wersji statycznej"
+
+#: ./browser/preferences/staticdeployment.py:139
+msgid "Static deployment panel"
+msgstr "Panel zarządzania eksportem do wersji statycznej"
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:214
+msgid "Status"
+msgstr "Status"
+
+#: ./browser/preferences/staticdeployment.py:228
+msgid "Succesfull deployment for section %s"
+msgstr "Eksport sekcji %s zakończył się powodzeniem"
+
+#: ./browser/preferences/staticdeployment.py:90
+msgid "Update deployment"
+msgstr "Uaktualnij"
+
+#: ./browser/preferences/staticdeployment-control-panel.pt:39
+msgid "Warning"
+msgstr "Uwaga"
+
+#: ./app/util.py:156
+msgid "Wrong format of last static deployment date."
+msgstr "Niepoprawny format daty poprzedniego eksportu"
+
+#. Default: "Cancel"
+#: ./browser/preferences/staticdeployment.py:171
+msgid "label_cancel"
+msgstr "Anuluj"
+
+#. Default: "(Required)"
+#: ./browser/preferences/staticdeployment-control-panel.pt:101
+msgid "label_required"
+msgstr "Wymagane"
+
+#. Default: "Save"
+#: ./browser/preferences/staticdeployment.py:164
+msgid "label_save"
+msgstr "Zapisz"
+
+#. Default: "Up to Site Setup"
+#: ./browser/preferences/staticdeployment-control-panel.pt:52
+msgid "label_up_to_plone_setup"
+msgstr "Wróć do ustawień witryny"
+
+#. Default: "Required"
+#: ./browser/preferences/staticdeployment-control-panel.pt:101
+msgid "title_required"
+msgstr "Wymagane"
+
+#. Default: "no"
+msgid "no"
+msgstr "Nie"
+
+#. Default: "yes"
+msgid "yes"
+msgstr "Tak"
+
+#. Default: "full_deployment"
+msgid "full_deployment"
+msgstr "Pełen eksport"
+
+#. Default: "update_deployment"
+msgid "update_deployment"
+msgstr "uaktualnienie"
+
+#. Default: "error"
+msgid "error"
+msgstr "Wystąpił błąd"
+
+#. Default: "succesfull"
+msgid "succesfull"
+msgstr "Poprawny eksport"
+
+#. Default: "Username"
+msgid "Username"
+msgstr "Użytkownik"
+
+#. Default: "The action of generating is already running"
+msgid "The action of generating is already running"
+msgstr "Nie można wykonać akcji, ponieważ nie zakończyła się wykonywać poprzednio wywołana akcja generowania wersji staytcznej"
+
+#. Default: "The action has been queued"
+msgid "The action has been queued"
+msgstr "Akcja została zakolejkowana"
+
+#: Default: "Static deployment"
+msgid "static_deployment_action_title"
+msgstr "Eksport do wersji statycznej"

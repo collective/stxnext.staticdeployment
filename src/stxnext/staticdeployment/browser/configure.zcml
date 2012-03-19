@@ -1,0 +1,17 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="stxnext.staticdeployment">
+    
+    <include package=".preferences" />
+	<browser:resourceDirectory name="stxnext.staticdeployment" directory="./resources" />
+
+    <browser:page
+        for="Products.CMFPlone.interfaces.siteroot.IPloneSiteRoot"
+        name="check_mutex"
+        permission="static.Export"
+        class=".check_mutex.CheckMutexAction"
+		attribute="check_mutex"
+        />
+		
+</configure>
