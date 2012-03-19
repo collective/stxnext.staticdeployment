@@ -8,13 +8,11 @@ from urllib import unquote
 from HTMLParser import HTMLParseError
 from urlparse import urlsplit, urlparse
 
-from plone.i18n.normalizer.interfaces import IUserPreferredURLNormalizer
 from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
 try:
     from zope.app.publisher.interfaces import IResource
 except ImportError:
     from zope.component.interfaces import IResource
-from zope.interface import Interface
 from zope.contentprovider.interfaces import ContentProviderLookupError
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -23,7 +21,6 @@ from zope.publisher.browser import applySkin
 from OFS.Image import Pdata, File, Image as OFSImage
 from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
-from Products.ATContentTypes.content.file import ATFile
 from Products.Archetypes.interfaces import IBaseObject
 from Products.CMFCore.FSDTMLMethod import FSDTMLMethod
 from Products.CMFCore.FSFile import FSFile
@@ -618,6 +615,8 @@ class StaticDeploymentUtils(object):
 
         try:
             content_file.write(post_transformated_content)
+        except UnicodeEncodeError:
+            content_file.write(post_transformated_content.encode('utf-8'))
         finally:
             content_file.close()
 
