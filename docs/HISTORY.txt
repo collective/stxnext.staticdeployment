@@ -10,7 +10,6 @@ Changelog
 
 - added 'jpeg' as valid extension of image file [radekj]
 
-
 0.8.1 (2011-11-02)
 -------------------
 
