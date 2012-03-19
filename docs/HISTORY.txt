@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.8.3 (2012-03-19)
+-------------------
+- added possibility for registration of image transformations
+
 0.8.2 (2012-02-10)
 -------------------
 
