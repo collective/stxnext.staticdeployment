@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os, re, logging
-from inspect import ismethod, isfunction
 from AccessControl.PermissionRole import rolesForPermissionOn
 from AccessControl.SecurityManagement import noSecurityManager
 from ConfigParser import ParsingError, NoOptionError
@@ -21,7 +20,6 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.publisher.browser import applySkin
 
 from OFS.Image import Pdata, File, Image as OFSImage
-from plone.app.blob.content import ATBlob
 from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
 from Products.Archetypes.interfaces import IBaseObject
@@ -305,21 +303,19 @@ class StaticDeploymentUtils(object):
             content = fs_file._readFile(None)
             self._write(filename, content)
 
-    def _deploy_views(self, views, is_page=False, context=None):
+    def _deploy_views(self, views, is_page=False):
         """
         Deploy views of context as pages.
         """
-        if context is None:
-            context = self.context
-
         for fullview_name in views:
-
+            
             fullview_path = None
             fullview_name_args = fullview_name.split('|')
             if len(fullview_name_args) > 1:
                 fullview_name = fullview_name_args[0]
                 fullview_path = fullview_name_args[1]
-
+            
+            context = self.context
             context_path = os.path.dirname(fullview_name)
             view_name = os.path.basename(fullview_name)
             if context_path:
@@ -329,11 +325,6 @@ class StaticDeploymentUtils(object):
                     continue
 
             content_obj = context.restrictedTraverse(view_name, None)
-            # get object's view content
-            if ismethod(content_obj) or isfunction(content_obj):
-                view = queryMultiAdapter((context, self.request), name=view_name)
-                content_obj = view.context()
-
             content = self._render_obj(content_obj)
             if content is None:
                 continue
@@ -458,14 +449,6 @@ class StaticDeploymentUtils(object):
             return
 
         filename = obj.absolute_url_path().lstrip('/')
-
-        # deploy additional views for content type
-        #if isinstance(obj, ATBlob):
-        #    log.error("Trying to deploy 'view'")
-        #    import pdb; pdb.set_trace()
-        #    self._deploy_views([os.path.join(filename, 'view'), ],
-        #            is_page=True, context=obj)
-
         if is_page:
             filename = os.path.join(filename, 'index.html')
         elif isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
@@ -476,7 +459,6 @@ class StaticDeploymentUtils(object):
                 filename = os.path.join(filename, 'image.jpg')
 
         self._write(filename, content)
-
         
         # deploy all sizes of images uploaded for the object
         if not getattr(obj, 'schema', None):
