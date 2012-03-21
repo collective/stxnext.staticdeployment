@@ -14,4 +14,10 @@
         for="zope.interface.Interface"
         />
 
+    <adapter
+        name="change_files_links"
+        factory=".transformations.ChangeFileLinksTransformation"
+        provides="..interfaces.IPostTransformation"
+        for="zope.interface.Interface"
+        />
 </configure>

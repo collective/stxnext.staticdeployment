@@ -9,8 +9,8 @@ from Products.ATContentTypes.content.image import ATImage
 
 from stxnext.staticdeployment.interfaces import ITransformation
 
-SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+\.(?:png|gif|jpg|jpeg)[\"'])", re.IGNORECASE)
 SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
+FILE_PATTERN = re.compile(r"<\s*(?:a)\s+[^>]*(?:href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 
 class Transformation(object):
     implements(ITransformation)
@@ -51,6 +51,27 @@ class ChangeImageLinksTransformation(Transformation):
                         text = text.replace(match, os.path.join(match[:-1],
                             'image.%s' % match.rsplit('.', 1)[-1]))
                     else:
-                        text = text.replace(os.path.join(match[:-1],
-                            'image.jpg"'))
+                        text = text.replace(match, os.path.join(match[:-1],
+                            'image.jpg%s' % match[-1]))
+        return text
+
+class ChangeFileLinksTransformation(Transformation):
+    """
+    Changes link to file object.
+    """
+
+    def __call__(self, text):
+        matches = FILE_PATTERN.findall(text)
+        for match in set(matches):
+            match_path = match.strip('"').strip("'").replace('../', '').replace('%20', ' ').lstrip('/').encode('utf-8')
+            obj = self.context.restrictedTraverse(match_path, None)
+            if hasattr(obj, 'getBlobWrapper'):
+                if 'image' not in obj.getBlobWrapper().getContentType():
+                    import pdb; pdb.set_trace()
+                    if len(match_path.rsplit('.', 1)) > 1:
+                        text = text.replace(match, os.path.join(match[:-1],
+                            'file.%s' % match.rsplit('.', 1)[-1]))
+                    else:
+                        text = text.replace(match, os.path.join(match[:-1],
+                            'file%s' % match[-1]))
         return text
