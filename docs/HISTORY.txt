@@ -1,11 +1,18 @@
 Changelog
 =========
 
+0.8.4 (2012-03-21)
+-------------------
+- image transformations extended with possibility to change image filename [radekj]
+
+0.8.3 (2012-03-19)
+-------------------
+- added possibility for registration of image transformations [radekj]
+ 
 0.8.2 (2012-02-10)
 -------------------
 
 - added 'jpeg' as valid extension of image file [radekj]
-
 
 0.8.1 (2011-11-02)
 -------------------
