@@ -67,7 +67,6 @@ class ChangeFileLinksTransformation(Transformation):
             obj = self.context.restrictedTraverse(match_path, None)
             if hasattr(obj, 'getBlobWrapper'):
                 if 'image' not in obj.getBlobWrapper().getContentType():
-                    import pdb; pdb.set_trace()
                     if len(match_path.rsplit('.', 1)) > 1:
                         text = text.replace(match, os.path.join(match[:-1],
                             'file.%s' % match.rsplit('.', 1)[-1]))

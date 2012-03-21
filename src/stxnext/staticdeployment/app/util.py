@@ -457,13 +457,20 @@ class StaticDeploymentUtils(object):
                 filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
             else:
                 filename = os.path.join(filename, 'image.jpg')
+        elif (hasattr(obj, 'getBlobWrapper') and 'image' not in
+                obj.getBlobWrapper().getContentType()):
+            # create path like for ATImage
+            if len(filename.rsplit('.', 1)) > 1:
+                filename  = os.path.join(filename, 'file.%s' % filename.rsplit('.', 1)[-1])
+            else:
+                filename = os.path.join(filename, 'file')
 
         self._write(filename, content)
-        
+
         # deploy all sizes of images uploaded for the object
         if not getattr(obj, 'schema', None):
             return
-        
+
         if hasattr(obj, 'getBlobWrapper'):
             blob = obj.getBlobWrapper()
             if 'image' in blob.getContentType():
@@ -483,7 +490,7 @@ class StaticDeploymentUtils(object):
                             content = self._render_obj(image)
                             if content:
                                 self._write(file_path, content)
- 
+
         for field in obj.schema.fields():
             if field.type == 'image':
                 sizes = field.getAvailableSizes(field)
@@ -498,7 +505,7 @@ class StaticDeploymentUtils(object):
                         content = self._render_obj(image)
                         if content:
                             self._write(file_path, content)
-                            
+
             elif field.type == 'file' and obj.meta_type not in self.file_types:
                 file_instance = field.getAccessor(obj)()
                 if file_instance:
@@ -596,7 +603,6 @@ class StaticDeploymentUtils(object):
 
         if dir_path is None:
             dir_path = self.base_dir
-
         file_path = os.path.join(dir_path, filename)
         file_path = unquote(file_path)
         _makedirs(os.path.dirname(file_path))
