@@ -2,7 +2,7 @@
 """
 Transformation adapters.
 """
-import re
+import os, re
 
 from zope.interface import implements
 from Products.ATContentTypes.content.image import ATImage
@@ -10,6 +10,7 @@ from Products.ATContentTypes.content.image import ATImage
 from stxnext.staticdeployment.interfaces import ITransformation
 
 SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+\.(?:png|gif|jpg|jpeg)[\"'])", re.IGNORECASE)
+SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 
 class Transformation(object):
     implements(ITransformation)
@@ -34,7 +35,7 @@ class RemoveDomainTransformation(Transformation):
 
 class ChangeImageLinksTransformation(Transformation):
     """
-    Changes link to image object. 
+    Changes link to image object.
     """
 
     def __call__(self, text):
@@ -46,6 +47,10 @@ class ChangeImageLinksTransformation(Transformation):
                 text = text.replace(match, match[:-1] + '/image.%s' % match.rsplit('.', 1)[-1])
             if hasattr(obj, 'getBlobWrapper'):
                 if 'image' in obj.getBlobWrapper().getContentType():
-                    text = text.replace(match, match[:-1] + '/image.%s' % match.rsplit('.', 1)[-1])
+                    if match_path.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
+                        text = text.replace(match, os.path.join(match[:-1],
+                            'image.%s' % match.rsplit('.', 1)[-1]))
+                    else:
+                        text = text.replace(os.path.join(match[:-1],
+                            'image.jpg"'))
         return text
-    
