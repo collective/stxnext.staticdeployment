@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os, re, logging
+from inspect import ismethod, isfunction
 from AccessControl.PermissionRole import rolesForPermissionOn
 from AccessControl.SecurityManagement import noSecurityManager
 from ConfigParser import ParsingError, NoOptionError
@@ -20,6 +21,7 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.publisher.browser import applySkin
 
 from OFS.Image import Pdata, File, Image as OFSImage
+from plone.app.blob.content import ATBlob
 from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
 from Products.Archetypes.interfaces import IBaseObject
@@ -325,6 +327,10 @@ class StaticDeploymentUtils(object):
                     continue
 
             content_obj = context.restrictedTraverse(view_name, None)
+            # get object's view content
+            if ismethod(content_obj) or isfunction(content_obj):
+                view = queryMultiAdapter((context, self.request), name=view_name)
+                content_obj = view.context()
             content = self._render_obj(content_obj)
             if content is None:
                 continue
@@ -449,6 +455,11 @@ class StaticDeploymentUtils(object):
             return
 
         filename = obj.absolute_url_path().lstrip('/')
+        # deploy additional views for content type
+        if isinstance(obj, ATBlob):
+            self._deploy_views([os.path.join(filename, 'view'), ],
+                    is_page=True)
+
         if is_page:
             filename = os.path.join(filename, 'index.html')
         elif isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
@@ -486,10 +497,18 @@ class StaticDeploymentUtils(object):
                         if image:
                             filename = image.getId()
                             dir_path = obj.absolute_url_path().lstrip('/')
-                            file_path = os.path.join(dir_path, filename)
+                            if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
+                                objpath = os.path.join(filename, 'image.%s' %
+                                        filename.rsplit('.', 1)[-1])
+                            else:
+                                objpath = os.path.join(filename, 'image.jpg')
+                            file_path = os.path.join(dir_path, objpath)
                             content = self._render_obj(image)
                             if content:
                                 self._write(file_path, content)
+                                # add as already deployed resource to avoid
+                                # redeployment in _deploy_resources
+                                self.deployed_resources.append(file_path)
 
         for field in obj.schema.fields():
             if field.type == 'image':
@@ -545,7 +564,6 @@ class StaticDeploymentUtils(object):
 
             if objpath in self.deployed_resources:
                 continue
-
             obj = self.context.restrictedTraverse(objpath, None)
             if objpath.rsplit('/', 1)[-1].split('.')[0] == 'image':
                 obj = self.context.restrictedTraverse(objpath.rsplit('.', 1)[0], None)
