@@ -9,6 +9,7 @@ from Products.ATContentTypes.content.image import ATImage
 
 from stxnext.staticdeployment.interfaces import ITransformation
 
+SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+\.(?:png|gif|jpg|jpeg)[\"'])", re.IGNORECASE)
 SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 
 class Transformation(object):
