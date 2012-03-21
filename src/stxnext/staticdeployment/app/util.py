@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os, re, logging
 from AccessControl.PermissionRole import rolesForPermissionOn
+from AccessControl.SecurityManagement import noSecurityManager
 from ConfigParser import ParsingError, NoOptionError
 from BeautifulSoup import BeautifulSoup
 from DateTime import DateTime
@@ -191,24 +192,26 @@ class StaticDeploymentUtils(object):
         js_tool = getToolByName(context, 'portal_javascripts')
         if initial_debugmode[0]: css_tool.setDebugMode(True)
         if initial_debugmode[1]: js_tool.setDebugMode(True)
-        
+
 
     def deploy(self, context, request, section, last_triggered=None):
         """
         Deploy whole site as static content.
         """
+        # get content for Anonymous users, not authenticated
+        noSecurityManager()
         self.context = context
         self.request = request
         self.section = section
         self._apply_request_modifications(section)
-        
+
         modification_date = self._parse_date(last_triggered)
-        
+
         ## Deploy registry files
-        if self.deploy_registry_files == 'true': 
+        if self.deploy_registry_files == 'true':
             self._deploy_registry_files('portal_css', 'styles')
             self._deploy_registry_files('portal_javascripts', 'scripts')
-        
+
         self._deploy_skinstool_files(self.skinstool_files)
         self._deploy_views(self.additional_files, is_page=False)
         self._deploy_views(self.additional_pages, is_page=True)
@@ -233,7 +236,7 @@ class StaticDeploymentUtils(object):
                         if not 'Anonymous' in rolesForPermissionOn('View', subobj):
                             exclude = True
                             break
-                
+
                 # extra deployment conditions
                 if not exclude:
                     extra_dep_conds = getAdapters((self.context,), IExtraDeploymentCondition)
@@ -242,7 +245,7 @@ class StaticDeploymentUtils(object):
                         if not condition(obj):
                             exclude = True
                             break
-                    
+
                 if not exclude:
                     if brain.meta_type in self.page_types:
                         is_page = True
@@ -338,7 +341,6 @@ class StaticDeploymentUtils(object):
         """
         if isinstance(obj, basestring):
             return obj
-
         ## 'plone.global_sections' viewlet uses request['URL'] highlight
         ## selected tab, so it must be overridden but only for a while
         initial_url = self.request['URL']
@@ -376,7 +378,6 @@ class StaticDeploymentUtils(object):
                 except NotFound:
                     log.error("Resource '%s' not found" % repr(obj))
                     return None
-
             if isinstance(obj, (FSFile, FSImage)):
                 return self._render_obj(obj._readFile(None))
 
@@ -546,7 +547,6 @@ class StaticDeploymentUtils(object):
             if not obj:
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
-
             if isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
                 # create path to dump ATImage in original size
                 if objpath.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
