@@ -37,7 +37,8 @@ from Products.PythonScripts.PythonScript import PythonScript
 from Products.statusmessages.interfaces import IStatusMessage
 
 from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeployment
-from stxnext.staticdeployment.interfaces import ITransformation, IImageTransformation, IDeploymentStep, IExtraDeploymentCondition, IPostTransformation
+from stxnext.staticdeployment.interfaces import ITransformation, IImageTransformation, IDeploymentStep, \
+    IExtraDeploymentCondition, IPostTransformation
 from stxnext.staticdeployment.utils import ConfigParser, get_config_path
 
 
@@ -156,15 +157,15 @@ class StaticDeploymentUtils(object):
             html = t(html)
         return html
 
-    def _apply_image_transforms(self, image):
+    def _apply_image_transforms(self, filename, image):
         """
         Apply transforms to output image.
         """
         transformations = getAdapters((self.context,), IImageTransformation)
         
         for t_name, t in transformations:
-            image = t(image)
-        return image
+            filename, image = t(filename, image)
+        return filename, image
 
     def _parse_date(self, last_triggered):
         """
@@ -312,7 +313,7 @@ class StaticDeploymentUtils(object):
             content = fs_file._readFile(None)
             
             if isinstance(fs_file, FSImage):
-                content = self._apply_image_transforms(content)
+                filename, content = self._apply_image_transforms(filename, content)
             self._write(filename, content)
 
     def _deploy_views(self, views, is_page=False):
@@ -471,7 +472,7 @@ class StaticDeploymentUtils(object):
                 filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
             else:
                 filename = os.path.join(filename, 'image.jpg')
-            content = self._apply_image_transforms(content)
+            filename, content = self._apply_image_transforms(filename, content)
 
         self._write(filename, content)
         
@@ -497,7 +498,7 @@ class StaticDeploymentUtils(object):
                             file_path = os.path.join(dir_path, filename)
                             content = self._render_obj(image)
                             if content:
-                                content = self._apply_image_transforms(content)
+                                file_path, content = self._apply_image_transforms(file_path, content)
                                 self._write(file_path, content)
  
         for field in obj.schema.fields():
@@ -513,7 +514,7 @@ class StaticDeploymentUtils(object):
                         file_path = os.path.join(dir_path, filename)
                         content = self._render_obj(image)
                         if content:
-                            content = self._apply_image_transforms(content)
+                            file_path, content = self._apply_image_transforms(file_path, content)
                             self._write(file_path, content)
                             
             elif field.type == 'file' and obj.meta_type not in self.file_types:
@@ -577,7 +578,7 @@ class StaticDeploymentUtils(object):
                 continue
             
             if isinstance(obj, FSImage):
-                content = self._apply_image_transforms(content)
+                objpath, content = self._apply_image_transforms(objpath, content)
                 
             self._write(objpath, content)
 
