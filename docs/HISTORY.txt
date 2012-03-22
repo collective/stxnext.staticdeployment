@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.8.5 (2012-03-22)
+-------------------
+- fixed applying image transformations for resources images [radekj]
+
 0.8.4 (2012-03-21)
 -------------------
 - image transformations extended with possibility to change image filename [radekj]

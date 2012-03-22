@@ -577,7 +577,8 @@ class StaticDeploymentUtils(object):
             if content is None:
                 continue
             
-            if isinstance(obj, FSImage):
+            if isinstance(obj, (FSImage, OFSImage, ATImage)) or hasattr(obj, 'getBlobWrapper') and \
+                'image' in obj.getBlobWrapper().getContentType():
                 objpath, content = self._apply_image_transforms(objpath, content)
                 
             self._write(objpath, content)
