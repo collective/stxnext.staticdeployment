@@ -40,7 +40,6 @@ src/stxnext/staticdeployment/content/configure.zcml
 src/stxnext/staticdeployment/content/store.py
 src/stxnext/staticdeployment/etc/staticdeployment.ini
 src/stxnext/staticdeployment/locales/stxnext.staticdeployment.pot
-src/stxnext/staticdeployment/locales/pl/LC_MESSAGES/stxnext.staticdeployment.mo
 src/stxnext/staticdeployment/locales/pl/LC_MESSAGES/stxnext.staticdeployment.po
 src/stxnext/staticdeployment/profiles/default/actionicons.xml
 src/stxnext/staticdeployment/profiles/default/actions.xml

@@ -20,20 +20,20 @@ Description: stxnext.staticdeployment
         
         Edit buildout.cfg and append ``stxnext.staticdeployment`` to eggs and zcml parameters in instance section::
         
-        [instance]
-        eggs =
-        ...
-        stxnext.staticdeployment
-        
-        zcml =
-        ...
-        stxnext.staticdeployment
+        	[instance]
+        	eggs =
+        	  ...
+        	  stxnext.staticdeployment
+        	
+        	zcml =
+        	  ...
+        	  stxnext.staticdeployment
         
         Instance must be rebuild and restarted::
         
-        ./bin/buildout
-        ./bin/instance stop
-        ./bin/instance start
+        	./bin/buildout
+        	./bin/instance stop
+        	./bin/instance start
         
         This product must be also installed inside Plone site. Do do it, go to *Site Setup* -> *Add/Remove Products*, select checkbox near *stxnext.staticdeployment* and click *Install* button.
         
@@ -41,21 +41,21 @@ Description: stxnext.staticdeployment
         Configuration
         =============
         
-        Every website has own configuration (different set of eggs, skin, products etc.) - this I meas as project. But website can have few instances (development, test and production instances). Because of this, configuration is split for two parts:
+        Every website has own configuration (different set of eggs, skin, products etc.) - this I meas as project. But website can have few instances (development, test and production instances). Because of this, configuration is split for two parts: 
         
-        * instance parameters:
+         * instance parameters:
+          
+           - parameters connected to instance - e.g.: domain
+           - configured in *Control Panel* - can be edited throw the web (*Site Setup* -> *Static deployment* -> *Settings* tab)
+           - form has description and validation - can be used by less experienced users
         
-        - parameters connected to instance - e.g.: domain
-        - configured in *Control Panel* - can be edited throw the web (*Site Setup* -> *Static deployment* -> *Settings* tab)
-        - form has description and validation - can be used by less experienced users
-        
-        * website parameters:
-        
-        - stored in INI file
-        - created by developer of website
-        - can be used by many sites
-        - `default configuration`_ (included in egg)
-        - default configuration can be overriden by file `${buildout:directory}/etc/staticdeployment.ini`
+         * website parameters:
+          
+           - stored in INI file
+           - created by developer of website
+           - can be used by many sites
+           - `default configuration`_ (included in egg)
+           - default configuration can be overriden by file `${buildout:directory}/etc/staticdeployment.ini`
         
         
         Usage
@@ -70,9 +70,9 @@ Description: stxnext.staticdeployment
         ================
         
         :Author:
-        * Igor Kupczyński <``igor.kupczynski@stxnext.pl``>
-        * Radosław Jankiewicz <``radoslaw.jankiewicz@stxnext.pl``>
-        * Wojciech Lichota <``wojciech.lichota@stxnext.pl``>
+         * Igor Kupczyński <``igor.kupczynski@stxnext.pl``>
+         * Radosław Jankiewicz <``radoslaw.jankiewicz@stxnext.pl``>
+         * Wojciech Lichota <``wojciech.lichota@stxnext.pl``>
         
         .. image:: http://stxnext.pl/open-source/files/stx-next-logo
         
