@@ -22,6 +22,7 @@ from zope.publisher.browser import applySkin
 
 from OFS.Image import Pdata, File, Image as OFSImage
 from plone.app.blob.content import ATBlob
+from plone.app.blob.interfaces import IBlobImageField, IBlobField
 from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
 from Products.Archetypes.interfaces import IBaseObject
@@ -482,50 +483,36 @@ class StaticDeploymentUtils(object):
         if not getattr(obj, 'schema', None):
             return
 
-        if hasattr(obj, 'getBlobWrapper'):
-            blob = obj.getBlobWrapper()
-            if 'image' in blob.getContentType():
-                field = obj.getField('image')
-                if field:
-                    sizes = field.getAvailableSizes(field)
-                    scalenames = sizes.keys()
-                    scalenames.append(None)
-                    for scalename in scalenames:
-                        if not scalename:
-                            continue
-                        image =  field.getScale(obj, scale=scalename)
-                        if image:
-                            filename = image.getId()
-                            dir_path = obj.absolute_url_path().lstrip('/')
-                            if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
-                                objpath = os.path.join(filename, 'image.%s' %
-                                        filename.rsplit('.', 1)[-1])
-                            else:
-                                objpath = os.path.join(filename, 'image.jpg')
-                            file_path = os.path.join(dir_path, objpath)
-                            content = self._render_obj(image)
-                            if content:
-                                self._write(file_path, content)
-                                # add as already deployed resource to avoid
-                                # redeployment in _deploy_resources
-                                self.deployed_resources.append(file_path)
-
-        for field in obj.schema.fields():
-            if field.type == 'image':
+        for field in obj.Schema().fields():
+            if IBlobImageField.providedBy(field):
                 sizes = field.getAvailableSizes(field)
                 scalenames = sizes.keys()
                 scalenames.append(None)
                 for scalename in scalenames:
                     image =  field.getScale(obj, scale=scalename)
                     if image:
-                        filename = image.getId()
+                        #store original image
+                        if scalename is None:
+                            filename = image.filename
+                            image = image.data
+                        else:
+                            filename = image.getId()
                         dir_path = obj.absolute_url_path().lstrip('/')
-                        file_path = os.path.join(dir_path, filename)
+                        if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
+                            objpath = os.path.join(filename, 'image.%s' %
+                                    filename.rsplit('.', 1)[-1])
+                        else:
+                            objpath = os.path.join(filename, 'image.jpg')
+
+                        file_path = os.path.join(dir_path, objpath)
                         content = self._render_obj(image)
                         if content:
                             self._write(file_path, content)
+                            # add as already deployed resource to avoid
+                            # redeployment in _deploy_resources
+                            self.deployed_resources.append(file_path)
 
-            elif field.type == 'file' and obj.meta_type not in self.file_types:
+            elif IBlobField.providedBy(field):
                 file_instance = field.getAccessor(obj)()
                 if file_instance:
                     filename = field.getName()
