@@ -517,7 +517,7 @@ class StaticDeploymentUtils(object):
                 if file_instance:
                     filename = field.getName()
                     dir_path = obj.absolute_url_path().lstrip('/')
-                    file_path = os.path.join(dir_path, filename)
+                    file_path = os.path.join(dir_path, 'at_download', filename)
                     if hasattr(file_instance, 'data'):
                         content = self._render_obj(str(file_instance.data))
                         if content:
