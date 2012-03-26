@@ -38,7 +38,8 @@ from Products.PythonScripts.PythonScript import PythonScript
 from Products.statusmessages.interfaces import IStatusMessage
 
 from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeployment
-from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep, IExtraDeploymentCondition, IPostTransformation
+from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep, IExtraDeploymentCondition, \
+    IPostTransformation, IImageTransformation
 from stxnext.staticdeployment.utils import ConfigParser, get_config_path
 
 
@@ -157,6 +158,15 @@ class StaticDeploymentUtils(object):
             html = t(html)
         return html
 
+    def _apply_image_transforms(self, filename, image):
+        """
+        Apply transforms to output image.
+        """
+        transformations = getAdapters((self.context,), IImageTransformation)
+        
+        for t_name, t in transformations:
+            filename, image = t(filename, image)
+        return filename, image
 
     def _parse_date(self, last_triggered):
         """
@@ -182,9 +192,11 @@ class StaticDeploymentUtils(object):
         """
         css_tool = getToolByName(context, 'portal_css')
         js_tool = getToolByName(context, 'portal_javascripts')
-        initial_debugmode = css_tool.getDebugMode(), js_tool.getDebugMode()
+        kss_tool = getToolByName(context, 'portal_kss')
+        initial_debugmode = css_tool.getDebugMode(), js_tool.getDebugMode(), kss_tool.getDebugMode() 
         if initial_debugmode[0]: css_tool.setDebugMode(False)
         if initial_debugmode[1]: js_tool.setDebugMode(False)
+        if initial_debugmode[2]: kss_tool.setDebugMode(False)
         return initial_debugmode
     
     def revert_resources_tools_mode(self, context, initial_debugmode=(True, True)):
@@ -193,8 +205,10 @@ class StaticDeploymentUtils(object):
         """
         css_tool = getToolByName(context, 'portal_css')
         js_tool = getToolByName(context, 'portal_javascripts')
+        kss_tool = getToolByName(context, 'portal_kss')
         if initial_debugmode[0]: css_tool.setDebugMode(True)
         if initial_debugmode[1]: js_tool.setDebugMode(True)
+        if initial_debugmode[2]: kss_tool.setDebugMode(True)
 
 
     def deploy(self, context, request, section, last_triggered=None):
@@ -212,8 +226,9 @@ class StaticDeploymentUtils(object):
 
         ## Deploy registry files
         if self.deploy_registry_files == 'true':
-            self._deploy_registry_files('portal_css', 'styles')
-            self._deploy_registry_files('portal_javascripts', 'scripts')
+            self._deploy_registry_files('portal_css', 'styles', 'styles')
+            self._deploy_registry_files('portal_javascripts', 'scripts', 'scripts')
+            self._deploy_registry_files('portal_kss', 'kss', 'kineticstylesheets')
 
         self._deploy_skinstool_files(self.skinstool_files)
         self._deploy_views(self.additional_files, is_page=False)
@@ -267,17 +282,16 @@ class StaticDeploymentUtils(object):
         settings.last_triggered = unicode(DateTime().strftime('%Y/%m/%d %H:%M:%S'))
 
 
-    def _deploy_registry_files(self, registry_type, resource_type):
+    def _deploy_registry_files(self, registry_type, resource_name, resource_type):
         """
         Deploy registered resources.
         """
-        registry_view = getMultiAdapter((self.context, self.request), name='resourceregistries_%s_view' % resource_type)
+        registry_view = getMultiAdapter((self.context, self.request), name='resourceregistries_%s_view' % resource_name)
         registry = registry_view.registry()
         resources = getattr(registry_view, resource_type)()
 
-        portal_url = getToolByName(self.context, 'portal_url')()
         for resource in resources:
-            filename = resource['src'].replace(portal_url, '')
+            filename = urlparse(resource['src']).path
             try:
                 content = registry.getResourceContent(os.path.basename(filename), self.context)
             except TypeError:
@@ -304,6 +318,12 @@ class StaticDeploymentUtils(object):
                 filename = match.group(1)
 
             content = fs_file._readFile(None)
+            
+            path = urlparse(self.context.portal_url()).path
+            filename = '/'.join((path, filename))
+            
+            if isinstance(fs_file, FSImage):
+                filename, content = self._apply_image_transforms(filename, content)
             self._write(filename, content)
 
     def _deploy_views(self, views, is_page=False):
@@ -339,7 +359,9 @@ class StaticDeploymentUtils(object):
             filename = fullview_name
             if is_page:
                 filename = os.path.join(filename, 'index.html')
-
+                
+            path = urlparse(self.context.portal_url()).path
+            filename = '/'.join((path, filename))
             self._write(filename, content, fullview_path)
 
     def _render_obj(self, obj):
@@ -444,8 +466,9 @@ class StaticDeploymentUtils(object):
         content = self._render_obj(obj)
         if content is None:
             return
-
-        self._write('index.html', content)
+        
+        path = urlparse(self.context.portal_url()).path
+        self._write('/'.join((path, 'index.html')), content)
 
     def _deploy_content(self, obj, is_page=True):
         """
@@ -469,6 +492,7 @@ class StaticDeploymentUtils(object):
                 filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
             else:
                 filename = os.path.join(filename, 'image.jpg')
+            filename, content = self._apply_image_transforms(filename, content)
         elif (hasattr(obj, 'getBlobWrapper') and 'image' not in
                 obj.getBlobWrapper().getContentType()):
             # create path like for ATImage
@@ -507,6 +531,7 @@ class StaticDeploymentUtils(object):
                         file_path = os.path.join(dir_path, objpath)
                         content = self._render_obj(image)
                         if content:
+                            file_path, content = self._apply_image_transforms(file_path, content)
                             self._write(file_path, content)
                             # add as already deployed resource to avoid
                             # redeployment in _deploy_resources
@@ -569,6 +594,10 @@ class StaticDeploymentUtils(object):
             content = self._render_obj(obj)
             if content is None:
                 continue
+
+            if isinstance(obj, (FSImage, OFSImage, ATImage)) or hasattr(obj, 'getBlobWrapper') and \
+                'image' in obj.getBlobWrapper().getContentType():
+                objpath, content = self._apply_image_transforms(objpath, content)
 
             self._write(objpath, content)
 

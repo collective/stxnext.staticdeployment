@@ -204,11 +204,8 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
                     shutil.rmtree(path)
                 except OSError, e:
                     log.exception('Removing previously deployed files for path: %s' % path)
-                    message = _(u"Couldn't remove files from %s" % path)
-                    messages.addStatusMessage(message, type='error')
                 else:
-                    message = _(u'Files from path %s have been succesfully removed.' % path)
-                    messages.addStatusMessage(message, type='info')
+                    log.info(u'Files from path %s have been succesfully removed.' % path)
         
         if data['deployment']:
             deployment_utils = getUtility(IStaticDeploymentUtils)

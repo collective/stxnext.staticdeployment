@@ -3,6 +3,7 @@
 Transformation adapters.
 """
 import os, re
+from urlparse import urlparse, urlunparse
 
 from zope.interface import implements
 from Products.ATContentTypes.content.image import ATImage
@@ -28,8 +29,10 @@ class RemoveDomainTransformation(Transformation):
     """
 
     def __call__(self, text):
-        text = text.replace(self.context.REQUEST['BASE1']+'/', '/')
-        text = text.replace(self.context.REQUEST['BASE1'], '/')
+        domain = urlparse(self.context.portal_url())
+        domain = urlunparse((domain.scheme, domain.netloc, '', '', '', ''))
+        text = text.replace(domain + '/', '/')
+        text = text.replace(domain, '/')
         return text
 
 
