@@ -37,7 +37,7 @@ class IPostTransformation(Interface):
     Transformation of some text after dropping objects to the file.
     """
 
-    def __call__(text):
+    def __call__(text, file_path):
         """
         Transform given text.
         """

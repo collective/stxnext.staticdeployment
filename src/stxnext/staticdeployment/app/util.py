@@ -104,7 +104,7 @@ class StaticDeploymentUtils(object):
         except ParsingError, e:
             log.exception("Error when trying to parse '%s'" % config_path)
             return
-        
+
         # non required params
         self.page_types = self.config.get_as_list('page-types', section=section)
         self.file_types = self.config.get_as_list('file-types', section=section)
@@ -113,21 +113,33 @@ class StaticDeploymentUtils(object):
         self.additional_pages = self.config.get_as_list('additional-pages', section=section)
         self.deployment_steps = self.config.get_as_list('deployment-steps', section=section)
         self.additional_directories = self.config.get_as_list('additional-directories', section=section)
+
+        try:
+            self.relative_links = self.config.getboolean(section,
+                    'make-links-relative')
+        except NoOptionError:
+            self.relative_links = False
+
+        try:
+            self.add_index = self.config.getboolean(section, 'add-index')
+        except NoOptionError:
+            self.add_index = False
+
         # required params
         try:
             self.deploy_plonesite = self.config.get(section, 'deploy-plonesite').strip()
         except NoOptionError:
             self.deploy_plonesite = 'true'
-            
+
         try:
             self.deploy_registry_files = self.config.get(section, 'deploy-registry-files').strip()
         except NoOptionError:
             self.deploy_registry_files = 'true'
-        
+
         self.deployable_review_states = self.config.get_as_list('deployable-review-states', section=section)
         if not self.deployable_review_states:
             self.deployable_review_states = ['published']
-        
+
         try:
             self.deployment_directory = self.config.get(section, 'deployment-directory').strip()
             self.layer_interface = self.config.get(section, 'layer-interface').strip()
@@ -136,7 +148,7 @@ class StaticDeploymentUtils(object):
             messages = IStatusMessage(self.request)
             messages.addStatusMessage(_(e.message), type='error')
             raise e
-        
+
 
     def _apply_transforms(self, html):
         """
@@ -148,14 +160,14 @@ class StaticDeploymentUtils(object):
             html = t(html)
         return html
 
-    def _apply_post_transforms(self, html):
+    def _apply_post_transforms(self, html, file_path=None):
         """
         Apply post transforms to output html.
         """
         transformations = getAdapters((self.context,), IPostTransformation)
 
         for t_name, t in transformations:
-            html = t(html)
+            html = t(html, file_path)
         return html
 
     def _apply_image_transforms(self, filename, image):
@@ -649,7 +661,8 @@ class StaticDeploymentUtils(object):
 
         if RE_NOT_BINARY.search(filename) and not omit_transform:
             pre_transformated_content = self._apply_transforms(content)
-            post_transformated_content = self._apply_post_transforms(pre_transformated_content)
+            post_transformated_content = self._apply_post_transforms(
+                    pre_transformated_content, file_path)
         else:
             pre_transformated_content = post_transformated_content = content
 
