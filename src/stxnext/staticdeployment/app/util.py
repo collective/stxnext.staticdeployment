@@ -127,14 +127,14 @@ class StaticDeploymentUtils(object):
 
         # required params
         try:
-            self.deploy_plonesite = self.config.get(section, 'deploy-plonesite').strip()
+            self.deploy_plonesite = self.config.getboolean(section, 'deploy-plonesite')
         except NoOptionError:
-            self.deploy_plonesite = 'true'
+            self.deploy_plonesite = True
 
         try:
-            self.deploy_registry_files = self.config.get(section, 'deploy-registry-files').strip()
+            self.deploy_registry_files = self.config.getboolean(section, 'deploy-registry-files')
         except NoOptionError:
-            self.deploy_registry_files = 'true'
+            self.deploy_registry_files = True
 
         self.deployable_review_states = self.config.get_as_list('deployable-review-states', section=section)
         if not self.deployable_review_states:
@@ -237,7 +237,7 @@ class StaticDeploymentUtils(object):
         modification_date = self._parse_date(last_triggered)
 
         ## Deploy registry files
-        if self.deploy_registry_files == 'true':
+        if self.deploy_registry_files:
             self._deploy_registry_files('portal_css', 'styles', 'styles')
             self._deploy_registry_files('portal_javascripts', 'scripts', 'scripts')
             self._deploy_registry_files('portal_kss', 'kss', 'kineticstylesheets')
@@ -247,7 +247,7 @@ class StaticDeploymentUtils(object):
         self._deploy_views(self.additional_pages, is_page=True)
 
         ## Deploy Plone Site
-        if self.deploy_plonesite == 'true':
+        if self.deploy_plonesite:
             self._deploy_site(self.context)
 
         ## Deploy folders and pages
