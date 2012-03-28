@@ -79,6 +79,7 @@ class StaticDeploymentUtils(object):
         applySkin(self.request, getattr(layer_interface_module, layer_interface_path[-1], None))
         self.context.changeSkin(self.defaultskin_name, self.request)
         self.request.set(request_varname, self.defaultskin_name)
+        self.request.method = 'GET'
 
         self.base_dir = os.path.normpath(self.deployment_directory)
         self.deployed_resources = []
@@ -397,9 +398,10 @@ class StaticDeploymentUtils(object):
             self.request['URL'] = obj_url
 
         ## breadcrumb implementation in quills uses 'PARENTS', so it must
-        ## be overriden but ony for a while 
+        ## be overriden but ony for a while
         initial_parents = self.request['PARENTS']
-        self.request['PARENTS'] = obj.aq_chain
+        if hasattr(obj, 'aq_chain'):
+            self.request['PARENTS'] = obj.aq_chain
 
         try:
             if IResource.providedBy(obj):
