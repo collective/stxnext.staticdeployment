@@ -11,6 +11,7 @@ from HTMLParser import HTMLParseError
 from urlparse import urlsplit, urlparse
 
 from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
+from zope.component.interfaces import ComponentLookupError
 try:
     from zope.app.publisher.interfaces import IResource
 except ImportError:
@@ -19,10 +20,11 @@ from zope.contentprovider.interfaces import ContentProviderLookupError
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.publisher.browser import applySkin
-
 from OFS.Image import Pdata, File, Image as OFSImage
+
 from plone.app.blob.content import ATBlob
-from plone.app.blob.interfaces import IBlobImageField, IBlobField
+from plone.app.blob.interfaces import IBlobImageField, IBlobField, IBlobWrapper
+
 from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
 from Products.Archetypes.interfaces import IBaseObject
@@ -43,12 +45,19 @@ from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep
 from stxnext.staticdeployment.utils import ConfigParser, get_config_path
 
 
+try:
+    from plone.resource.file import FilesystemFile
+except ImportError:
+    pass
+
+
 log = logging.getLogger(__name__)
 
 
 RE_WO_1ST_DIRECTORY = re.compile(r'^[^/]+?[/](.*)$')
 RE_CSS_URL = re.compile(r"""url\(["']?([^\)'"]+)['"]?\)""")
-RE_CSS_IMPORTS = re.compile(r"(?<=url\()[a-zA-Z0-9\.\-\/\:\_]+\.(?:css)")
+RE_CSS_IMPORTS = re.compile(r"(?<=url\()[a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css)")
+RE_CSS_IMPORTS_HREF = re.compile(r"(?<=href\=[\'\"])[a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css)")
 RE_NOT_BINARY = re.compile(r'\.css$|\.js$|\.txt$|\.html$')
 
 
@@ -435,7 +444,15 @@ class StaticDeploymentUtils(object):
 
             if mt in self.file_types or isinstance(obj, (ImageField, OFSImage, Pdata, File)):
                 return self._render_obj(obj.data)
-
+            
+            if isinstance(obj, FilesystemFile):
+                if not obj.request:
+                    obj.request = self.request
+                    return obj().read()
+                
+            if IBlobWrapper.providedBy(obj):
+                return obj.data
+            
             if IBaseObject.providedBy(obj) or isinstance(obj, PloneSite):
                 def_page_id = obj.getDefaultPage()
                 if def_page_id:
@@ -444,6 +461,11 @@ class StaticDeploymentUtils(object):
 
                 view_name = obj.getLayout()
                 view = queryMultiAdapter((obj, self.request), name=view_name)
+                if view_name == 'language-switcher':
+                    lang = self.request.get('LANGUAGE')
+                    def_page = getattr(obj, lang, None)
+                    if def_page:
+                        return self._render_obj(def_page)
                 if view:
                     try:
                         return view.context()
@@ -455,12 +477,17 @@ class StaticDeploymentUtils(object):
                     try:
                         return view.context()
                     except AttributeError:
-                        view()
+                        try:
+                            return view()
+                        except Exception, error:
+                            log.warning("Unable to render view: '%s'! Error occurred: %s" % (view, error))
+                            pass
 
-                try:
-                    return obj()
-                except AttributeError:
-                    pass
+                else:
+                    try:
+                        return obj()
+                    except AttributeError:
+                        pass
 
         finally:
             ## back to initial url
@@ -596,6 +623,26 @@ class StaticDeploymentUtils(object):
             if not obj:
                 obj = self.context.restrictedTraverse(unquote(objpath), None)
             if not obj:
+                parent_obj = self.context.restrictedTraverse(unquote(objpath.rsplit('/', 1)[0]), None)
+                if parent_obj:
+                    image_name = objpath.rsplit('/', 1)[1]
+                    fieldname, scale = image_name.split('_', 1)
+                    obj = self.context.restrictedTraverse(unquote('/'.join(parent_obj.getPhysicalPath() + (fieldname,))), None)
+                    objpath = os.path.join(objpath, 'image.jpg')
+            if not obj:
+                if '/@@images/' in objpath:
+                    parent_path, image_name = objpath.split('/@@images/')
+                    parent_obj = self.context.restrictedTraverse(unquote(parent_path), None)
+                    if parent_obj:
+                        fieldname, scalename = image_name.split('/')
+                        try:
+                            images_view = getMultiAdapter((parent_obj, self.request), name='images')
+                            field = images_view.field(fieldname)
+                            obj = field.getScale(parent_obj)
+                            objpath = os.path.join(parent_path, '_'.join((fieldname, scalename)), 'image.jpg')
+                        except ComponentLookupError:
+                            pass
+            if not obj:
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
             if isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
@@ -629,6 +676,7 @@ class StaticDeploymentUtils(object):
         # deploying resources only from local domain (the path don't contain external address) 
         urls = [tag['src'] for tag in soup.findAll(['img', 'input', 'embed', 'script'], src=True) if not urlparse(tag['src'])[0]]
         css_imports = RE_CSS_IMPORTS.findall(html)
+        css_imports += RE_CSS_IMPORTS_HREF.findall(html)
         css_imports = [link for link in css_imports if not urlparse(link)[0]]
         local_styles = RE_CSS_URL.findall(html)
         urls = urls + css_imports + local_styles

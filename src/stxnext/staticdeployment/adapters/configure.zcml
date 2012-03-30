@@ -27,4 +27,12 @@
         provides="..interfaces.IPostTransformation"
         for="zope.interface.Interface"
         />
+
+    <adapter
+        name="apply_diazo_theme"
+        factory=".transformations.ApplyDiazoThemeTransformation"
+        provides="..interfaces.ITransformation"
+        for="zope.interface.Interface"
+        />
+
 </configure>

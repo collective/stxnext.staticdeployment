@@ -10,8 +10,20 @@ from urlparse import urlparse, urlunparse, urlsplit, urlunsplit
 from OFS.Image import File
 from Products.ATContentTypes.content.image import ATImage
 from Products.CMFCore.FSObject import FSObject
-from zope.component import getUtility
+from zope.component import getUtility, queryUtility
 from zope.interface import implements
+
+from plone.app.blob.interfaces import IBlobWrapper
+
+try:
+    from plone.app.theming.transform import ThemeTransform
+    from plone.app.theming.interfaces import IThemeSettings
+    from plone.registry.interfaces import IRegistry
+    HAS_DIAZO_THEME = True
+except ImportError:
+    HAS_DIAZO_THEME = False
+
+    
 
 from stxnext.staticdeployment.interfaces import (IPostTransformation,
         IStaticDeploymentUtils, ITransformation)
@@ -76,6 +88,22 @@ class ChangeImageLinksTransformation(PostTransformation):
                     else:
                         text = text.replace(match, os.path.join(match[:-1],
                             'image.jpg%s' % match[-1]))
+            if not obj:
+                try:
+                    path, filename = match_path.rsplit('/', 1)
+                except ValueError:
+                    continue
+                fieldname = filename.split('_', 1)[0]
+                obj = self.context.restrictedTraverse('/'.join((path, fieldname)), None)
+                if IBlobWrapper.providedBy(obj):
+                    text = text.replace(match_path, match_path + '/image.jpg')
+                if not obj:
+                    if '/@@images/' in match_path:
+                        parent_path, image_name = match_path.split('/@@images/')
+                        fieldname, scalename = image_name.split('/')
+                        new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
+                        text = text.replace(match_path, new_path + '/image.jpg')
+            
         return text
 
 
@@ -160,3 +188,32 @@ class RelativeLinksPostTransformation(PostTransformation):
             ## This is a different domain
             return False
         return True
+
+
+class ApplyDiazoThemeTransformation(PostTransformation):
+    """
+    Apply diazo transform
+    """
+
+    def __call__(self, text, file_path=None):
+        # don't execute this transform if plone.app.theming is not installed
+        if not HAS_DIAZO_THEME:
+            return text
+        
+        # don't execute this transform if the theme is not enabled
+        registry = queryUtility(IRegistry)
+        settings = registry.forInterface(IThemeSettings, False)
+        if not settings.enabled:
+            return text
+        
+        context = self.context
+        req = context.REQUEST
+        # set false BASE url to omit the theme's blacklisted domains
+        req['BASE1'] = 'http://apply_diazo_theme.com'
+        theme_transform = ThemeTransform(context, req)
+        encoding = 'utf-8'
+        transformed_text = theme_transform.transformIterable(text, encoding)
+        if transformed_text:
+            text = transformed_text.serialize()
+        return text
+    
