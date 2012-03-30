@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, re, logging
+import os, re, logging, inspect
 from inspect import ismethod, isfunction
 from AccessControl.PermissionRole import rolesForPermissionOn
 from AccessControl.SecurityManagement import noSecurityManager
@@ -22,8 +22,12 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.publisher.browser import applySkin
 from OFS.Image import Pdata, File, Image as OFSImage
 
-from plone.app.blob.content import ATBlob
-from plone.app.blob.interfaces import IBlobImageField, IBlobField, IBlobWrapper
+try:
+    from plone.app.blob.content import ATBlob
+    from plone.app.blob.interfaces import IBlobImageField, IBlobField, IBlobWrapper
+    PLONE_APP_BLOB_INSTALLED = True
+except:
+    PLONE_APP_BLOB_INSTALLED = False
 
 from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
@@ -47,8 +51,9 @@ from stxnext.staticdeployment.utils import ConfigParser, get_config_path
 
 try:
     from plone.resource.file import FilesystemFile
+    PLONE_RESOURCE_INSTALLED = True
 except ImportError:
-    pass
+    PLONE_RESOURCE_INSTALLED = False
 
 
 log = logging.getLogger(__name__)
@@ -177,7 +182,12 @@ class StaticDeploymentUtils(object):
         transformations = getAdapters((self.context,), IPostTransformation)
 
         for t_name, t in transformations:
-            html = t(html, file_path)
+            # Condition added to keep compatibility with
+            # existing transformations after the change in API
+            if len(inspect.getargspec(t.__call__)[0]) == 3:
+                html = t(html, file_path)
+            else:
+                html = t(html)
         return html
 
     def _apply_image_transforms(self, filename, image):
@@ -313,7 +323,7 @@ class StaticDeploymentUtils(object):
         resources = getattr(registry_view, resource_type)()
 
         for resource in resources:
-            filename = urlparse(resource['src']).path
+            filename = urlparse(resource['src'])[2]
             try:
                 content = registry.getResourceContent(os.path.basename(filename), self.context)
             except TypeError:
@@ -341,7 +351,7 @@ class StaticDeploymentUtils(object):
 
             content = fs_file._readFile(None)
             
-            path = urlparse(self.context.portal_url()).path
+            path = urlparse(self.context.portal_url())[2]
             filename = '/'.join((path, filename))
             
             if isinstance(fs_file, FSImage):
@@ -382,7 +392,7 @@ class StaticDeploymentUtils(object):
             if is_page:
                 filename = os.path.join(filename, 'index.html')
                 
-            path = urlparse(self.context.portal_url()).path
+            path = urlparse(self.context.portal_url())[2]
             filename = '/'.join((path, filename))
             self._write(filename, content, fullview_path)
 
@@ -445,12 +455,12 @@ class StaticDeploymentUtils(object):
             if mt in self.file_types or isinstance(obj, (ImageField, OFSImage, Pdata, File)):
                 return self._render_obj(obj.data)
             
-            if isinstance(obj, FilesystemFile):
+            if PLONE_RESOURCE_INSTALLED and isinstance(obj, FilesystemFile):
                 if not obj.request:
                     obj.request = self.request
                     return obj().read()
                 
-            if IBlobWrapper.providedBy(obj):
+            if PLONE_APP_BLOB_INSTALLED and IBlobWrapper.providedBy(obj):
                 return obj.data
             
             if IBaseObject.providedBy(obj) or isinstance(obj, PloneSite):
@@ -508,7 +518,7 @@ class StaticDeploymentUtils(object):
         if content is None:
             return
         
-        path = urlparse(self.context.portal_url()).path
+        path = urlparse(self.context.portal_url())[2]
         self._write('/'.join((path, 'index.html')), content)
 
     def _deploy_content(self, obj, is_page=True):
@@ -521,7 +531,7 @@ class StaticDeploymentUtils(object):
 
         filename = obj.absolute_url_path().lstrip('/')
         # deploy additional views for content type
-        if isinstance(obj, ATBlob):
+        if PLONE_APP_BLOB_INSTALLED and isinstance(obj, ATBlob):
             self._deploy_views([os.path.join(filename, 'view'), ],
                     is_page=True)
 
@@ -549,7 +559,7 @@ class StaticDeploymentUtils(object):
             return
 
         for field in obj.Schema().fields():
-            if IBlobImageField.providedBy(field):
+            if PLONE_APP_BLOB_INSTALLED and IBlobImageField.providedBy(field):
                 sizes = field.getAvailableSizes(field)
                 scalenames = sizes.keys()
                 scalenames.append(None)
@@ -578,12 +588,38 @@ class StaticDeploymentUtils(object):
                             # redeployment in _deploy_resources
                             self.deployed_resources.append(file_path)
 
-            elif IBlobField.providedBy(field):
+            elif PLONE_APP_BLOB_INSTALLED and IBlobField.providedBy(field):
                 file_instance = field.getAccessor(obj)()
                 if file_instance:
                     filename = field.getName()
                     dir_path = obj.absolute_url_path().lstrip('/')
                     file_path = os.path.join(dir_path, 'at_download', filename)
+                    if hasattr(file_instance, 'data'):
+                        content = self._render_obj(str(file_instance.data))
+                        if content:
+                            self._write(file_path, content)
+                            
+            elif field.type == 'image':
+                sizes = field.getAvailableSizes(field)
+                scalenames = sizes.keys()
+                scalenames.append(None)
+                for scalename in scalenames:
+                    image =  field.getScale(obj, scale=scalename)
+                    if image:
+                        filename = image.getId()
+                        dir_path = obj.absolute_url_path().lstrip('/')
+                        file_path = os.path.join(dir_path, filename)
+                        content = self._render_obj(image)
+                        if content:
+                            file_path, content = self._apply_image_transforms(file_path, content)
+                            self._write(file_path, content)
+            
+            elif field.type == 'file' and obj.meta_type not in self.file_types:
+                file_instance = field.getAccessor(obj)()
+                if file_instance:
+                    filename = field.getName()
+                    dir_path = obj.absolute_url_path().lstrip('/')
+                    file_path = os.path.join(dir_path, filename)
                     if hasattr(file_instance, 'data'):
                         content = self._render_obj(str(file_instance.data))
                         if content:
@@ -625,8 +661,8 @@ class StaticDeploymentUtils(object):
             if not obj:
                 parent_obj = self.context.restrictedTraverse(unquote(objpath.rsplit('/', 1)[0]), None)
                 if parent_obj:
-                    image_name = objpath.rsplit('/', 1)[1]
-                    fieldname, scale = image_name.split('_', 1)
+                    image_name = objpath.rsplit('/', 1)[-1]
+                    fieldname = image_name.split('_', 1)[0]
                     obj = self.context.restrictedTraverse(unquote('/'.join(parent_obj.getPhysicalPath() + (fieldname,))), None)
                     objpath = os.path.join(objpath, 'image.jpg')
             if not obj:
@@ -712,16 +748,17 @@ class StaticDeploymentUtils(object):
         if RE_NOT_BINARY.search(filename) and not omit_transform:
             pre_transformated_content = self._apply_transforms(content)
             post_transformated_content = self._apply_post_transforms(
-                    pre_transformated_content, file_path)
+                    pre_transformated_content, file_path=file_path)
         else:
             pre_transformated_content = post_transformated_content = content
-
-        try:
-            content_file.write(post_transformated_content)
-        except UnicodeEncodeError:
-            content_file.write(post_transformated_content.encode('utf-8'))
+        try:    
+            try:
+                content_file.write(post_transformated_content)
+            except UnicodeEncodeError:
+                content_file.write(post_transformated_content.encode('utf-8'))
         finally:
             content_file.close()
+            
 
         log.debug("[*] '%s' saved." % filename)
 

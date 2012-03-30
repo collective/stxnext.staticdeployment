@@ -13,7 +13,11 @@ from Products.CMFCore.FSObject import FSObject
 from zope.component import getUtility, queryUtility
 from zope.interface import implements
 
-from plone.app.blob.interfaces import IBlobWrapper
+try:
+    from plone.app.blob.interfaces import IBlobWrapper
+    PLONE_APP_BLOB_INSTALLED = True
+except:
+    PLONE_APP_BLOB_INSTALLED = False
 
 try:
     from plone.app.theming.transform import ThemeTransform
@@ -62,7 +66,7 @@ class RemoveDomainTransformation(Transformation):
 
     def __call__(self, text):
         domain = urlparse(self.context.portal_url())
-        domain = urlunparse((domain.scheme, domain.netloc, '', '', '', ''))
+        domain = urlunparse((domain[0], domain[1], '', '', '', ''))
         text = text.replace(domain + '/', '/')
         text = text.replace(domain, '/')
         return text
@@ -95,7 +99,7 @@ class ChangeImageLinksTransformation(PostTransformation):
                     continue
                 fieldname = filename.split('_', 1)[0]
                 obj = self.context.restrictedTraverse('/'.join((path, fieldname)), None)
-                if IBlobWrapper.providedBy(obj):
+                if PLONE_APP_BLOB_INSTALLED and IBlobWrapper.providedBy(obj):
                     text = text.replace(match_path, match_path + '/image.jpg')
                 if not obj:
                     if '/@@images/' in match_path:
