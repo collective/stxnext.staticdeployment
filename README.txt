@@ -1,10 +1,11 @@
+
 stxnext.staticdeployment
-========================
+########################
 
 Overview
 ========
 
-Deploy Plone site to static files.
+``stxnext.staticdeployment`` is a tool to deploy Plone site to static files. It supporst Plone 3 and Plone 4 (including sites using Diazo themes).
 
 
 Installation
@@ -48,6 +49,49 @@ Every website has own configuration (different set of eggs, skin, products etc.)
    - can be used by many sites
    - `default configuration`_ (included in egg)
    - default configuration can be overriden by file `${buildout:directory}/etc/staticdeployment.ini`
+
+
+`staticdeployment.ini` paramaters
+---------------------------------
+
+``deployment-directory`` (string)
+    Where to deploy site. Path can be relative or absolute. Default: `./plone-static`
+
+``layer-interface`` (string)
+    Default: ``zope.publisher.interfaces.browser.IDefaultBrowserLayer``
+
+``defaultskin-name`` (string)
+    Skin which will be used during deploy. Default: `Sunburst Theme`
+
+``deploy-plonesite`` (boolean)
+    If enabled home page will be deployed also as `index.html` in root of ``deployment-directory``. Default: ``true``
+
+``deploy-registry-files`` (boolean)
+    Deploy registry files (CSS, JS, KSS)? Default: ``true``
+
+``make-links-relative`` (boolean)
+    Make all links relative (otherwise they will be absolute). Default: ``false``
+
+``add-index`` (boolean)
+    Add `index.html` to all links (that should have `index.html`). Works only when ``make-links-relative`` is enabled. Default: ``false``
+
+``page-types`` (list)
+    Page types that should be deployed. For example: ``ATDocument``, ``ATFolder``
+
+``file-types`` (list)
+    File types that should be deployed. For example: ``ATBlob``
+
+``skinstool-files`` (list)
+    Additional files (from ``plone_skins`` tool) which should be deployed. For example: `plone_images/favicon.ico`
+
+``additional-files`` (list)
+    Other files to deploy. For example: `sitemap.xml.gz`
+
+``additional-pages`` (list)
+    Other pages that should be deployed. For example: `sitemap`
+    
+``deployable-review-states`` (list)
+    Only pages with review states listed here will be deployed. Default: `published`
 
 
 Usage
