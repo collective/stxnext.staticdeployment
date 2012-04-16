@@ -24,6 +24,9 @@ class ConfigParser(GenericConfigParser):
     """
 
     def get_as_list(self, parameter, section=DEFAULT_INI_SECTION):
+        """
+        Returns parameter values (one per line) as a list
+        """
         try:
             raw_data = self.get(section, parameter).strip()
         except ConfigParserError:

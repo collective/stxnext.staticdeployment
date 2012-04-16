@@ -1,4 +1,6 @@
-<configure xmlns="http://namespaces.zope.org/zope">
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:zcml="http://namespaces.zope.org/zcml">
 
     <adapter
         name="remove_domain"
@@ -30,9 +32,10 @@
 
     <adapter
         name="apply_diazo_theme"
-        factory=".transformations.ApplyDiazoThemeTransformation"
+        factory=".diazo.ApplyDiazoThemeTransformation"
         provides="..interfaces.ITransformation"
         for="zope.interface.Interface"
+        zcml:condition="installed plone.app.theming"
         />
 
 </configure>

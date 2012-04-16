@@ -10,7 +10,7 @@ from urlparse import urlparse, urlunparse, urlsplit, urlunsplit
 from OFS.Image import File
 from Products.ATContentTypes.content.image import ATImage
 from Products.CMFCore.FSObject import FSObject
-from zope.component import getUtility, queryUtility
+from zope.component import getUtility
 from zope.interface import implements
 
 try:
@@ -19,15 +19,6 @@ try:
 except:
     PLONE_APP_BLOB_INSTALLED = False
 
-try:
-    from plone.app.theming.transform import ThemeTransform
-    from plone.app.theming.interfaces import IThemeSettings
-    from plone.registry.interfaces import IRegistry
-    HAS_DIAZO_THEME = True
-except ImportError:
-    HAS_DIAZO_THEME = False
-
-    
 
 from stxnext.staticdeployment.interfaces import (IPostTransformation,
         IStaticDeploymentUtils, ITransformation)
@@ -107,7 +98,7 @@ class ChangeImageLinksTransformation(PostTransformation):
                         fieldname, scalename = image_name.split('/')
                         new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
                         text = text.replace(match_path, new_path + '/image.jpg')
-            
+
         return text
 
 
@@ -157,16 +148,16 @@ class RelativeLinksPostTransformation(PostTransformation):
             else:
                 target = main_dir
             match_path = clean_match.replace('../', '').replace('%20', ' ')
-            if self.same_domain(clean_match, file_path):
+            if self.is_same_domain(clean_match, file_path):
                 obj = self.context.restrictedTraverse(match_path, None)
                 if obj and not isinstance(obj, (FSObject, File)) and add_index:
                     target = os.path.join(target, 'index.html')
-                text = text.replace(match, self.relative_url(target, file_path))
+                text = text.replace(match, self.get_relative_url(target, file_path))
         return text
 
 
     @staticmethod
-    def relative_url(destination, source):
+    def get_relative_url(destination, source):
         """ Returns relative url """
         #http://stackoverflow.com/a/7469668
         if not destination.strip('#'):
@@ -180,7 +171,7 @@ class RelativeLinksPostTransformation(PostTransformation):
 
 
     @staticmethod
-    def same_domain(destination, source):
+    def is_same_domain(destination, source):
         """ Checks if given urls belonges to the same domain """
         u_dest = urlsplit(destination)
         u_src = urlsplit(source)
@@ -192,32 +183,3 @@ class RelativeLinksPostTransformation(PostTransformation):
             ## This is a different domain
             return False
         return True
-
-
-class ApplyDiazoThemeTransformation(PostTransformation):
-    """
-    Apply diazo transform
-    """
-
-    def __call__(self, text, file_path=None):
-        # don't execute this transform if plone.app.theming is not installed
-        if not HAS_DIAZO_THEME:
-            return text
-        
-        # don't execute this transform if the theme is not enabled
-        registry = queryUtility(IRegistry)
-        settings = registry.forInterface(IThemeSettings, False)
-        if not settings.enabled:
-            return text
-        
-        context = self.context
-        req = context.REQUEST
-        # set false BASE url to omit the theme's blacklisted domains
-        req['BASE1'] = 'http://apply_diazo_theme.com'
-        theme_transform = ThemeTransform(context, req)
-        encoding = 'utf-8'
-        transformed_text = theme_transform.transformIterable(text, encoding)
-        if transformed_text:
-            text = transformed_text.serialize()
-        return text
-    
