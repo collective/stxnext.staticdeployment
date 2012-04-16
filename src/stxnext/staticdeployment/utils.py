@@ -13,6 +13,7 @@ def get_config_path():
     the path to the default stxntext.staticdeployment module's configuration file is returned:
     ${buildout:directory}/eggs/stxnext.staticdeployment/stxnext/staticdeployment/etc/staticdeployment.ini
     """
+    #CLIENT_HOME will be populated by Plone
     config_path = os.path.join(CLIENT_HOME, '..', '..', 'etc', 'staticdeployment.ini')
     if not os.path.isfile(config_path):
         config_path = os.path.join(os.path.dirname(__file__), 'etc', 'staticdeployment.ini')

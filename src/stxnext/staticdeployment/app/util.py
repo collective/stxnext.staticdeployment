@@ -78,15 +78,13 @@ class StaticDeploymentUtils(object):
     """
     View for static deployment.
     """
-    
-    def _apply_request_modifications(self, section):
+
+    def _apply_request_modifications(self):
         """
-        Apply proper skin name and five skinlayer. 
+        Apply proper skin name and five skinlayer.
         """
-        config_path = os.path.normpath(get_config_path())
         skins_tool = getToolByName(self.context, 'portal_skins')
         request_varname = skins_tool.request_varname
-        self._read_config(config_path, section)
 
         layer_interface_path = self.layer_interface.split('.')
         layer_interface_module = __import__('.'.join(layer_interface_path[:-1]), {}, {}, layer_interface_path[-1])
@@ -97,7 +95,8 @@ class StaticDeploymentUtils(object):
 
         self.base_dir = os.path.normpath(self.deployment_directory)
         self.deployed_resources = []
-        
+
+
     def revert_request_modifications(self, context, request):
         """
         Apply plone default skin name and five skinlayer.
@@ -108,19 +107,23 @@ class StaticDeploymentUtils(object):
         context.changeSkin(None, request)
         request.set(request_varname, None)
 
-    def _read_config(self, config_path, section):
+
+    def _read_config(self,  section):
         """
         Read config from .ini file.
         """
+        # get path to config file and read it
+        config_path = os.path.normpath(get_config_path())
         config_file = open(config_path, 'r')
+        # parse file in ConfigParser
         self.config = ConfigParser()
         try:
             self.config.readfp(config_file)
         except ParsingError, e:
             log.exception("Error when trying to parse '%s'" % config_path)
             return
-
         # non required params
+        # list-like params
         self.page_types = self.config.get_as_list('page-types', section=section)
         self.file_types = self.config.get_as_list('file-types', section=section)
         self.skinstool_files = self.config.get_as_list('skinstool-files', section=section)
@@ -128,20 +131,20 @@ class StaticDeploymentUtils(object):
         self.additional_pages = self.config.get_as_list('additional-pages', section=section)
         self.deployment_steps = self.config.get_as_list('deployment-steps', section=section)
         self.additional_directories = self.config.get_as_list('additional-directories', section=section)
-
+        # params with default values
+        # boolean params
         self.relative_links = self.config.getboolean(section,
                 'make-links-relative', False)
         self.add_index = self.config.getboolean(section, 'add-index', False)
-        # required params
         self.deploy_plonesite = self.config.getboolean(section,
                 'deploy-plonesite', True)
         self.deploy_registry_files = self.config.getboolean(section,
                 'deploy-registry-files', True)
-
+        # list param
         self.deployable_review_states = self.config.get_as_list('deployable-review-states', section=section)
         if not self.deployable_review_states:
             self.deployable_review_states = ['published']
-
+        # required params
         try:
             self.deployment_directory = self.config.get(section, 'deployment-directory').strip()
             self.layer_interface = self.config.get(section, 'layer-interface').strip()
@@ -162,6 +165,7 @@ class StaticDeploymentUtils(object):
             html = t(html)
         return html
 
+
     def _apply_post_transforms(self, html, file_path=None):
         """
         Apply post transforms to output html.
@@ -177,15 +181,17 @@ class StaticDeploymentUtils(object):
                 html = t(html)
         return html
 
+
     def _apply_image_transforms(self, filename, image):
         """
         Apply transforms to output image.
         """
         transformations = getAdapters((self.context,), IImageTransformation)
-        
+
         for t_name, t in transformations:
             filename, image = t(filename, image)
         return filename, image
+
 
     def _parse_date(self, last_triggered):
         """
@@ -202,8 +208,9 @@ class StaticDeploymentUtils(object):
             message = _(u'Wrong format of last static deployment date.')
             messages.addStatusMessage(message, type='error')
             raise e
-        
+
         return last_triggered_date
+
 
     def initial_resources_tools_mode(self, context):
         """
@@ -217,7 +224,8 @@ class StaticDeploymentUtils(object):
         if initial_debugmode[1]: js_tool.setDebugMode(False)
         if initial_debugmode[2]: kss_tool.setDebugMode(False)
         return initial_debugmode
-    
+
+
     def revert_resources_tools_mode(self, context, initial_debugmode=(True, True)):
         """
         Set initial mode for css and js tools.
@@ -239,7 +247,8 @@ class StaticDeploymentUtils(object):
         self.context = context
         self.request = request
         self.section = section
-        self._apply_request_modifications(section)
+        self._read_config(section)
+        self._apply_request_modifications()
 
         modification_date = self._parse_date(last_triggered)
 
@@ -319,6 +328,7 @@ class StaticDeploymentUtils(object):
 
             self._write(filename, content)
 
+
     def _deploy_skinstool_files(self, files):
         """
         Deploy files from portal_skins but not registered in portal_css or portal_js.
@@ -337,26 +347,27 @@ class StaticDeploymentUtils(object):
                 filename = match.group(1)
 
             content = fs_file._readFile(None)
-            
+
             path = urlparse(self.context.portal_url())[2]
             filename = '/'.join((path, filename))
-            
+
             if isinstance(fs_file, FSImage):
                 filename, content = self._apply_image_transforms(filename, content)
             self._write(filename, content)
+
 
     def _deploy_views(self, views, is_page=False):
         """
         Deploy views of context as pages.
         """
         for fullview_name in views:
-            
+
             fullview_path = None
             fullview_name_args = fullview_name.split('|')
             if len(fullview_name_args) > 1:
                 fullview_name = fullview_name_args[0]
                 fullview_path = fullview_name_args[1]
-            
+
             context = self.context
             context_path = os.path.dirname(fullview_name)
             view_name = os.path.basename(fullview_name)
@@ -378,10 +389,11 @@ class StaticDeploymentUtils(object):
             filename = fullview_name
             if is_page:
                 filename = os.path.join(filename, 'index.html')
-                
+
             path = urlparse(self.context.portal_url())[2]
             filename = '/'.join((path, filename))
             self._write(filename, content, fullview_path)
+
 
     def _render_obj(self, obj):
         """
@@ -441,15 +453,15 @@ class StaticDeploymentUtils(object):
 
             if mt in self.file_types or isinstance(obj, (ImageField, OFSImage, Pdata, File)):
                 return self._render_obj(obj.data)
-            
+
             if PLONE_RESOURCE_INSTALLED and isinstance(obj, FilesystemFile):
                 if not obj.request:
                     obj.request = self.request
                     return obj().read()
-                
+
             if PLONE_APP_BLOB_INSTALLED and IBlobWrapper.providedBy(obj):
                 return obj.data
-            
+
             if IBaseObject.providedBy(obj) or isinstance(obj, PloneSite):
                 def_page_id = obj.getDefaultPage()
                 if def_page_id:
@@ -493,7 +505,7 @@ class StaticDeploymentUtils(object):
 
             ## back to initial parents
             self.request['PARENTS'] = initial_parents
-        
+
         log.warning("Not recognized object '%s'!" % repr(obj))
         return None
 
@@ -505,7 +517,7 @@ class StaticDeploymentUtils(object):
         content = self._render_obj(obj)
         if content is None:
             return
-        
+
         path = urlparse(self.context.portal_url())[2]
         self._write('/'.join((path, 'index.html')), content)
 
@@ -641,6 +653,7 @@ class StaticDeploymentUtils(object):
             else:
                 continue
 
+
     def _deploy_resources(self, urls, base_path):
         """
         Deploy resources linked in HTML or CSS.
@@ -714,6 +727,7 @@ class StaticDeploymentUtils(object):
 
             self.deployed_resources.append(objpath)
 
+
     def _parse_html(self, html, base_path=''):
         """
         Save all resources used in HTML file.
@@ -722,7 +736,7 @@ class StaticDeploymentUtils(object):
             soup = BeautifulSoup(html)
         except HTMLParseError:
             return
-        
+
         # deploying resources only from local domain (the path don't contain external address) 
         urls = [tag['src'] for tag in soup.findAll(['img', 'input', 'embed', 'script'], src=True) if not urlparse(tag['src'])[0]]
         css_imports = RE_CSS_IMPORTS.findall(html)
@@ -732,17 +746,19 @@ class StaticDeploymentUtils(object):
         urls = urls + css_imports + local_styles
         self._deploy_resources(urls, unquote(base_path))
 
+
     def _parse_css(self, content, base_path=''):
         """
         Save all resources used in CSS file.
         """
         self._deploy_resources(RE_CSS_URL.findall(content), unquote(base_path))
 
+
     def _write(self, filename, content, dir_path=None, omit_transform=False):
         """
         Write content to file.
         """
-        filename = filename.lstrip('/') 
+        filename = filename.lstrip('/')
 
         if not content:
             log.warning("File '%s' is empty." % filename)
@@ -765,14 +781,13 @@ class StaticDeploymentUtils(object):
                     pre_transformated_content, file_path=file_path)
         else:
             pre_transformated_content = post_transformated_content = content
-        try:    
+        try:
             try:
                 content_file.write(post_transformated_content)
             except UnicodeEncodeError:
                 content_file.write(post_transformated_content.encode('utf-8'))
         finally:
             content_file.close()
-            
 
         log.debug("[*] '%s' saved." % filename)
 

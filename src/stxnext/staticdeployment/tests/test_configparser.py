@@ -4,6 +4,7 @@ import unittest
 
 from stxnext.staticdeployment.utils import ConfigParser
 
+
 SECTION = 'TEST-SECTION'
 WRONG_SECTION = 'OTHER-SECTION'
 INI = StringIO.StringIO("""[%s]
@@ -125,6 +126,7 @@ class TestConfigParser(unittest.TestCase):
         """
         self.assertFalse(self.config.get_as_list('list-option-1',
             section=WRONG_SECTION))
+
     def test_list_with_one_value(self):
         """
         Test if ConfigParser.get_as_list will return list with one element
