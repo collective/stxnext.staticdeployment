@@ -1,5 +1,6 @@
 import os, logging
-from ConfigParser import Error as ConfigParserError, ConfigParser as GenericConfigParser
+from ConfigParser import (Error as ConfigParserError,
+        ConfigParser as GenericConfigParser, NoOptionError)
 
 DEFAULT_INI_SECTION = 'DEFAULT'
 
@@ -22,6 +23,19 @@ class ConfigParser(GenericConfigParser):
     """
     Extended config parser.
     """
+    def getboolean(self, section, parameter, default=None):
+        """
+        Patched ConfigParser.getboolean - returns 'default' if provided,
+        otherwise raises NoOptionError
+        """
+        try:
+            #ConfigParser is an old-style class
+            return GenericConfigParser.getboolean(self, section, parameter)
+        except NoOptionError:
+            if default is not None:
+                return default
+            else:
+                raise
 
     def get_as_list(self, parameter, section=DEFAULT_INI_SECTION):
         """

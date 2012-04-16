@@ -129,27 +129,14 @@ class StaticDeploymentUtils(object):
         self.deployment_steps = self.config.get_as_list('deployment-steps', section=section)
         self.additional_directories = self.config.get_as_list('additional-directories', section=section)
 
-        try:
-            self.relative_links = self.config.getboolean(section,
-                    'make-links-relative')
-        except NoOptionError:
-            self.relative_links = False
-
-        try:
-            self.add_index = self.config.getboolean(section, 'add-index')
-        except NoOptionError:
-            self.add_index = False
-
+        self.relative_links = self.config.getboolean(section,
+                'make-links-relative', False)
+        self.add_index = self.config.getboolean(section, 'add-index', False)
         # required params
-        try:
-            self.deploy_plonesite = self.config.getboolean(section, 'deploy-plonesite')
-        except NoOptionError:
-            self.deploy_plonesite = True
-
-        try:
-            self.deploy_registry_files = self.config.getboolean(section, 'deploy-registry-files')
-        except NoOptionError:
-            self.deploy_registry_files = True
+        self.deploy_plonesite = self.config.getboolean(section,
+                'deploy-plonesite', True)
+        self.deploy_registry_files = self.config.getboolean(section,
+                'deploy-registry-files', True)
 
         self.deployable_review_states = self.config.get_as_list('deployable-review-states', section=section)
         if not self.deployable_review_states:
