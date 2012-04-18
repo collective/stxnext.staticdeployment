@@ -108,7 +108,7 @@ class StaticDeploymentUtils(object):
         request.set(request_varname, None)
 
 
-    def _read_config(self,  section):
+    def _read_config(self, section):
         """
         Read config from .ini file.
         """
@@ -159,9 +159,11 @@ class StaticDeploymentUtils(object):
         """
         Apply transforms to output html.
         """
-        transformations = getAdapters((self.context,), ITransformation)
+        #get all registered "standard" transformations
+        transformations = getAdapters((self.context, ), ITransformation)
 
         for t_name, t in transformations:
+            log.debug('Processing %s transformation' % t_name)
             html = t(html)
         return html
 
@@ -170,11 +172,13 @@ class StaticDeploymentUtils(object):
         """
         Apply post transforms to output html.
         """
+        #get all registered "late/post" transformations
         transformations = getAdapters((self.context,), IPostTransformation)
 
         for t_name, t in transformations:
             # Condition added to keep compatibility with
             # existing transformations after the change in API
+            log.debug('Processing %s post-transformation' % t_name)
             if len(inspect.getargspec(t.__call__)[0]) == 3:
                 html = t(html, file_path)
             else:
@@ -186,9 +190,12 @@ class StaticDeploymentUtils(object):
         """
         Apply transforms to output image.
         """
+        #get all registered image transformations
         transformations = getAdapters((self.context,), IImageTransformation)
 
         for t_name, t in transformations:
+            log.debug('Processing %s image transformation for %s' % (t_name,
+                filename))
             filename, image = t(filename, image)
         return filename, image
 
@@ -219,23 +226,67 @@ class StaticDeploymentUtils(object):
         css_tool = getToolByName(context, 'portal_css')
         js_tool = getToolByName(context, 'portal_javascripts')
         kss_tool = getToolByName(context, 'portal_kss')
-        initial_debugmode = css_tool.getDebugMode(), js_tool.getDebugMode(), kss_tool.getDebugMode() 
+        initial_debugmode = (css_tool.getDebugMode(), js_tool.getDebugMode(),
+                kss_tool.getDebugMode())
+        #if DebugMode was enabled, disable it
         if initial_debugmode[0]: css_tool.setDebugMode(False)
         if initial_debugmode[1]: js_tool.setDebugMode(False)
         if initial_debugmode[2]: kss_tool.setDebugMode(False)
         return initial_debugmode
 
 
-    def revert_resources_tools_mode(self, context, initial_debugmode=(True, True)):
+    def revert_resources_tools_mode(self, context,
+            initial_debugmode=(True, True, True)):
         """
         Set initial mode for css and js tools.
         """
         css_tool = getToolByName(context, 'portal_css')
         js_tool = getToolByName(context, 'portal_javascripts')
         kss_tool = getToolByName(context, 'portal_kss')
+        # if DebugMode was enabled for resource, enable it
         if initial_debugmode[0]: css_tool.setDebugMode(True)
         if initial_debugmode[1]: js_tool.setDebugMode(True)
         if initial_debugmode[2]: kss_tool.setDebugMode(True)
+
+
+    @staticmethod
+    def _available_for_anonymous(obj):
+        """
+        Checks if object is available for anonymous users
+        """
+        chain = obj.aq_chain
+        # is object and its parents are available for anonymous?
+        for subobj in chain:
+            if IBaseObject.providedBy(subobj) or isinstance(subobj, PloneSite):
+                if not 'Anonymous' in rolesForPermissionOn('View', subobj):
+                    return False
+        return True
+
+
+    def _extra_deployment_conditions_passed(self, obj, modification_date):
+        """
+        Checks if object passed extra deployment conditions
+        """
+        extra_dep_conds = getAdapters((self.context, ), IExtraDeploymentCondition)
+        for cond_name, condition in extra_dep_conds:
+            condition.update(self, modification_date)
+            if not condition(obj):
+                return False
+        return True
+
+
+    def _applay_extra_deployment_steps(self, modification_date):
+        """
+        Applays extra deployment steps
+        """
+        steps = getAdapters((self.context,), IDeploymentStep)
+        for step_name, step in steps:
+            if step_name in self.deployment_steps:
+                # update step's vars
+                step.update(self, modification_date)
+                log.debug('Calling additional deployment step: %s' % step_name)
+                # call it
+                step()
 
 
     def deploy(self, context, request, section, last_triggered=None):
@@ -244,12 +295,15 @@ class StaticDeploymentUtils(object):
         """
         # get content for Anonymous users, not authenticated
         noSecurityManager()
+        # assing values
         self.context = context
         self.request = request
         self.section = section
+
         self._read_config(section)
         self._apply_request_modifications()
 
+        # when last deployment took place
         modification_date = self._parse_date(last_triggered)
 
         ## Deploy registry files
@@ -258,7 +312,9 @@ class StaticDeploymentUtils(object):
             self._deploy_registry_files('portal_javascripts', 'scripts', 'scripts')
             self._deploy_registry_files('portal_kss', 'kss', 'kineticstylesheets')
 
+        # Deploy plone_skins files (if any)
         self._deploy_skinstool_files(self.skinstool_files)
+        # Deploy additional files and pages
         self._deploy_views(self.additional_files, is_page=False)
         self._deploy_views(self.additional_pages, is_page=True)
 
@@ -269,43 +325,26 @@ class StaticDeploymentUtils(object):
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
         brains = catalog(meta_type=self.page_types + self.file_types,
-                         modified={'query':[modification_date], 'range':'min'},
+                         modified={'query': [modification_date, ], 'range': 'min'},
                          effectiveRange = DateTime(),
                          )
         for brain in brains:
             if not brain.review_state or brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
-                chain = obj.aq_chain
-                exclude = False
-                for subobj in chain:
-                    if IBaseObject.providedBy(subobj) or isinstance(subobj, PloneSite):
-                        if not 'Anonymous' in rolesForPermissionOn('View', subobj):
-                            exclude = True
-                            break
-
-                # extra deployment conditions
-                if not exclude:
-                    extra_dep_conds = getAdapters((self.context,), IExtraDeploymentCondition)
-                    for cond_name, condition in extra_dep_conds:
-                        condition.update(self, modification_date)
-                        if not condition(obj):
-                            exclude = True
-                            break
-
-                if not exclude:
-                    if brain.meta_type in self.page_types:
-                        is_page = True
-                    else:
-                        is_page = False
-                    self._deploy_content(obj, is_page=is_page)
+                # we want only objects available for anonyous users 
+                if not self._available_for_anonymous(obj):
+                    break
+                # check extra deployment conditions
+                if not self._extra_deployment_conditions_passed(obj,
+                        modification_date):
+                    break
+                # check if object is a normal page
+                is_page = brain.meta_type in self.page_types
+                self._deploy_content(obj, is_page=is_page)
 
         ## find and run additional deployment steps
-        steps = getAdapters((self.context,), IDeploymentStep)
-        for step_name, step in steps:
-            if step_name in self.deployment_steps:
-                step.update(self, modification_date)
-                step()
-
+        self._applay_extra_deployment_steps(modification_date)
+        # update last triggered date info
         settings = IStaticDeployment(self.context)
         settings.last_triggered = unicode(DateTime().strftime('%Y/%m/%d %H:%M:%S'))
 
@@ -361,7 +400,6 @@ class StaticDeploymentUtils(object):
         Deploy views of context as pages.
         """
         for fullview_name in views:
-
             fullview_path = None
             fullview_name_args = fullview_name.split('|')
             if len(fullview_name_args) > 1:
@@ -378,7 +416,7 @@ class StaticDeploymentUtils(object):
                     continue
 
             content_obj = context.restrictedTraverse(view_name, None)
-            # get object's view content
+            # get object's view content 
             if ismethod(content_obj) or isfunction(content_obj):
                 view = queryMultiAdapter((context, self.request), name=view_name)
                 content_obj = view.context()
@@ -389,9 +427,10 @@ class StaticDeploymentUtils(object):
             filename = fullview_name
             if is_page:
                 filename = os.path.join(filename, 'index.html')
-
-            path = urlparse(self.context.portal_url())[2]
+            # where to write view content (based on view path)
+            path = urlparse(self.context.portal_url()).path
             filename = '/'.join((path, filename))
+            # write view content on the disk
             self._write(filename, content, fullview_path)
 
 
