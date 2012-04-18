@@ -58,8 +58,10 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-
-RE_WO_1ST_DIRECTORY = re.compile(r'^[^/]+?[/](.*)$')
+# gets path without first directory - used in
+# SecurityManagement._deploy_skinstool_files
+RE_WO_1ST_DIRECTORY = re.compile(r'^(/)?[^/]+?[/](.*)$')
+# gets all url() CSS directives
 RE_CSS_URL = re.compile(r"""url\(["']?([^\)'"]+)['"]?\)""")
 RE_CSS_IMPORTS = re.compile(r"(?<=url\()[a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css)")
 RE_CSS_IMPORTS_HREF = re.compile(r"(?<=href\=[\'\"])[a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css)")
@@ -373,7 +375,6 @@ class StaticDeploymentUtils(object):
         Deploy files from portal_skins but not registered in portal_css or portal_js.
         """
         skins_tool = getToolByName(self.context, 'portal_skins')
-
         for fs_file_path in files:
             fs_file = skins_tool.getSkinByPath(fs_file_path)
             if not fs_file:
@@ -383,7 +384,7 @@ class StaticDeploymentUtils(object):
             filename = fs_file_path
             match = RE_WO_1ST_DIRECTORY.match(filename)
             if match:
-                filename = match.group(1)
+                filename = match.group(2)
 
             content = fs_file._readFile(None)
 

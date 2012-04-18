@@ -137,7 +137,6 @@ class TestConfigParser(unittest.TestCase):
 
 
 def test_suite():
-    from unittest import TestSuite, makeSuite
-    suite = TestSuite()
-    suite.addTest(makeSuite(TestConfigParser))
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(TestConfigParser))
     return suite
