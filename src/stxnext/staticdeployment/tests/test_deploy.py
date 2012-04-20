@@ -1,8 +1,12 @@
+from ConfigParser import NoSectionError
 import unittest
+
+from zope.component import getUtility
 
 from stxnext.staticdeployment.app.util import (RE_WO_1ST_DIRECTORY, RE_CSS_URL,
         RE_CSS_IMPORTS, RE_CSS_IMPORTS_HREF, RE_NOT_BINARY)
-
+from stxnext.staticdeployment.interfaces import IStaticDeploymentUtils
+from stxnext.staticdeployment.tests.base import INTEGRATION_TESTING
 
 # http://www.w3.org/TR/CSS2/syndata.html#value-def-uri
 CSS = """
@@ -112,7 +116,38 @@ class TestRegexPatterns(unittest.TestCase):
         self.assertTrue(RE_NOT_BINARY.search(filename_6) is None)
 
 
+class TestStaticDeploymentUtils(unittest.TestCase):
+
+    layer = INTEGRATION_TESTING
+    SECTION = 'PLONE'
+
+    def setUp(self):
+        self.portal = self.layer['portal']
+        self.request = self.layer['request']
+        self.sdutils = getUtility(IStaticDeploymentUtils)
+
+
+    def test_read_config(self):
+        """
+        Tests StaticDeploymentUtils._read_config method
+        """
+        self.sdutils._read_config(self.SECTION)
+        # is using temporary dir to deploy site?
+        self.assertEqual(self.sdutils.deployment_directory,
+                self.layer['tmp_dir'])
+
+
+    def test_read_config_invalid_section(self):
+        """
+        Test StaticDeploymentUtils._read_config with invalid section provided
+        """
+        self.assertRaises(NoSectionError, self.sdutils._read_config,
+                'INVALID-SECTION')
+
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestRegexPatterns))
+    suite.addTest(unittest.makeSuite(TestStaticDeploymentUtils))
     return suite

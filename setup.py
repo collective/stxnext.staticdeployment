@@ -30,8 +30,7 @@ setup (
 
     extras_require = {
     'test': [
-            'plone.testing',
-            'Products.PloneTestCase',
+            'plone.app.testing',
         ]
     },
 
