@@ -63,8 +63,11 @@ log = logging.getLogger(__name__)
 RE_WO_1ST_DIRECTORY = re.compile(r'^(/)?[^/]+?[/](.*)$')
 # gets all url() CSS directives
 RE_CSS_URL = re.compile(r"""url\(["']?([^\)'"]+)['"]?\)""")
-RE_CSS_IMPORTS = re.compile(r"(?<=url\()[a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css)")
+# finds css imports (assumes that '.css' inside url() means @import)
+RE_CSS_IMPORTS = re.compile(r"(?<=url\()[\"\']?([a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css))")
+# finds css imports in html (<link />)
 RE_CSS_IMPORTS_HREF = re.compile(r"(?<=href\=[\'\"])[a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css)")
+# matches non-binary files (CSS, JS, TXT, HTML)
 RE_NOT_BINARY = re.compile(r'\.css$|\.js$|\.txt$|\.html$')
 
 
