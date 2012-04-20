@@ -7,7 +7,8 @@ version = open('src/stxnext/staticdeployment/version.txt').read()
 setup (
     name='stxnext.staticdeployment',
     version=version,
-    author='STX Next Sp. z o.o, Igor Kupczyński, Radosław Jankiewicz, Wojciech Lichota',
+    author='STX Next Sp. z o.o, Igor Kupczyński, Radosław Jankiewicz, ' \
+            'Wojciech Lichota, Sebastian Kalinowski',
     author_email='info@stxnext.pl',
     description='Deploy Plone site to static files.',
     long_description=open("README.txt").read() + "\n" +
@@ -26,6 +27,13 @@ setup (
         'setuptools',
         'BeautifulSoup',
        ],
+
+    extras_require = {
+    'test': [
+            'plone.testing',
+            'Products.PloneTestCase',
+        ]
+    },
 
     entry_points="""
     [z3c.autoinclude.plugin]
