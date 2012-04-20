@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.0.0 (unreleased)
+-------------------
+- TODO: describe changes
+
 0.8.5 (2012-03-22)
 -------------------
 - fixed applying image transformations for resources images [radekj]

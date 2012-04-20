@@ -9,6 +9,7 @@ class IStaticDeploymentUtils(Interface):
     Functnions neccesery to deploy static content
     """
 
+
 class IImageTransformation(Interface):
     """
     Transformation of some image.
@@ -19,6 +20,7 @@ class IImageTransformation(Interface):
         Transform given image.
         """
 
+
 class ITransformation(Interface):
     """
     Transformation of some text.
@@ -28,14 +30,14 @@ class ITransformation(Interface):
         """
         Transform given text.
         """
-        
+
 
 class IPostTransformation(Interface):
     """
     Transformation of some text after dropping objects to the file.
     """
 
-    def __call__(text):
+    def __call__(text, file_path):
         """
         Transform given text.
         """

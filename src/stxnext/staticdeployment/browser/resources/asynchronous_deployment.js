@@ -685,13 +685,13 @@ jQuery(document).ready(function(){
     setInterval( function() {
 		if (static_deployment_form.length) {
 			jQuery.ajax({
-				url: '/check_mutex',
+				url: 'check_mutex',
 				dataType: "text",
 				success: function(data){
 					if (data == 'True') {
 						jQuery('#export-running').hide();
 						if (busy) {
-							window.location = '/@@staticdeployment-controlpanel';
+							window.location = '@@staticdeployment-controlpanel';
 						}
 						busy = false;
 					}
@@ -741,7 +741,7 @@ jQuery(document).ready(function(){
 		}
 		
 		if (cancel>=0){
-			window.location = '/@@staticdeployment-controlpanel';
+			window.location = '@@staticdeployment-controlpanel';
 		}
 		
 		if (save>=0){

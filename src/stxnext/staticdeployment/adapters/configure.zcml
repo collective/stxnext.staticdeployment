@@ -1,4 +1,6 @@
-<configure xmlns="http://namespaces.zope.org/zope">
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:zcml="http://namespaces.zope.org/zcml">
 
     <adapter
         name="remove_domain"
@@ -12,6 +14,28 @@
         factory=".transformations.ChangeImageLinksTransformation"
         provides="..interfaces.IPostTransformation"
         for="zope.interface.Interface"
+        />
+
+    <adapter
+        name="change_files_links"
+        factory=".transformations.ChangeFileLinksTransformation"
+        provides="..interfaces.IPostTransformation"
+        for="zope.interface.Interface"
+        />
+
+    <adapter
+        name="make_links_relative"
+        factory=".transformations.RelativeLinksPostTransformation"
+        provides="..interfaces.IPostTransformation"
+        for="zope.interface.Interface"
+        />
+
+    <adapter
+        name="apply_diazo_theme"
+        factory=".diazo.ApplyDiazoThemeTransformation"
+        provides="..interfaces.ITransformation"
+        for="zope.interface.Interface"
+        zcml:condition="installed plone.app.theming"
         />
 
 </configure>
