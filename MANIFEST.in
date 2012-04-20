@@ -1,4 +1,5 @@
 global-include *.txt
+global-include *.rst
 global-include *.zcml
 global-include *.xml
 global-include *.pt
