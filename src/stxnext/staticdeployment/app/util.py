@@ -338,11 +338,11 @@ class StaticDeploymentUtils(object):
                 obj = brain.getObject()
                 # we want only objects available for anonyous users 
                 if not self._available_for_anonymous(obj):
-                    break
+                    continue
                 # check extra deployment conditions
                 if not self._extra_deployment_conditions_passed(obj,
                         modification_date):
-                    break
+                    continue
                 # check if object is a normal page
                 is_page = brain.meta_type in self.page_types
                 self._deploy_content(obj, is_page=is_page)
@@ -720,6 +720,12 @@ class StaticDeploymentUtils(object):
 
             if isinstance(objpath, unicode):
                 objpath = objpath.encode('utf-8')
+
+            # PloneSite with id 'plone' case problems during
+            # restrictedTraverse() so we cut it
+            objpath_spl = objpath.split('/', 1)
+            if objpath_spl[0] == 'plone' and len(objpath_spl) > 1:
+                objpath = objpath_spl[1]
 
             if objpath in self.deployed_resources:
                 continue

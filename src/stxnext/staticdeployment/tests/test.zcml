@@ -1,0 +1,11 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope">
+
+    <adapter
+        name="example_extra_deployment_condition"
+        factory="stxnext.staticdeployment.tests.adapters.ExampleExtraDeploymentCondition"
+        provides="stxnext.staticdeployment.interfaces.IExtraDeploymentCondition"
+        for="zope.interface.Interface"
+        />
+
+</configure>

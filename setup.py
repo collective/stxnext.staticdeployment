@@ -11,7 +11,7 @@ setup (
             'Wojciech Lichota, Sebastian Kalinowski',
     author_email='info@stxnext.pl',
     description='Deploy Plone site to static files.',
-    long_description=open("README.txt").read() + "\n" +
+    long_description=open("README.rst").read() + "\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
     keywords='plone static deploy',
     platforms=['any'],

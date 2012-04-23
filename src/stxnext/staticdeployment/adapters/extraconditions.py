@@ -18,5 +18,5 @@ class ExtraDeploymentCondition(object):
         self.config = deployment_view.config
         self.modification_date = modification_date
 
-    def __call__(self):
+    def __call__(self, obj):
         return True

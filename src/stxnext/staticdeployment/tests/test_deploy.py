@@ -125,6 +125,7 @@ class TestStaticDeploymentUtils(unittest.TestCase):
         self.portal = self.layer['portal']
         self.request = self.layer['request']
         self.sdutils = getUtility(IStaticDeploymentUtils)
+        self.sdutils.request = self.request
 
 
     def test_read_config(self):
@@ -139,10 +140,26 @@ class TestStaticDeploymentUtils(unittest.TestCase):
 
     def test_read_config_invalid_section(self):
         """
-        Test StaticDeploymentUtils._read_config with invalid section provided
+        Tests StaticDeploymentUtils._read_config with invalid section provided
         """
         self.assertRaises(NoSectionError, self.sdutils._read_config,
                 'INVALID-SECTION')
+
+
+    def test_available_for_anonymous(self):
+        """
+        Tests StaticDeploymentUtils._available_for_anonymous method
+        """
+        # object is published => avaialbe for anonymous user
+        self.assertTrue(self.sdutils._available_for_anonymous(
+            self.portal['f1']))
+        # object is not published -> not avaialbe for anonymous user
+        self.assertFalse(self.sdutils._available_for_anonymous(
+            self.portal['f2']))
+        # object is published but parent object isn't -> not avaialbe for
+        # anonymous user
+        self.assertFalse(self.sdutils._available_for_anonymous(
+            self.portal['f2']['nd2']))
 
 
 
