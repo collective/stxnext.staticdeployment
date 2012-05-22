@@ -1,0 +1,210 @@
+Changelog
+=========
+
+0.8.5 (2012-03-22)
+-------------------
+- fixed applying image transformations for resources images [radekj]
+
+0.8.4 (2012-03-21)
+-------------------
+- image transformations extended with possibility to change image filename [radekj]
+
+0.8.3 (2012-03-19)
+-------------------
+- added possibility for registration of image transformations [radekj]
+ 
+0.8.2 (2012-02-10)
+-------------------
+
+- added 'jpeg' as valid extension of image file [radekj]
+
+0.8.1 (2011-11-02)
+-------------------
+
+- fixed dumping images [radekj]
+
+0.8.0 (2011-10-27)
+-------------------
+
+- fixed dumping blob images [radekj]
+
+0.7.14 (2011-09-08)
+-------------------
+
+- added possibility to explicitely omit transforms on dumped content [radekj]
+
+0.7.13 (2011-03-23)
+-------------------
+
+- polish translations [radekj]
+
+0.7.12 (2011-03-22)
+-------------------
+
+- added possibility to register html transform performed after deploying resources [radekj]
+
+0.7.11 (2011-03-18)
+-------------------
+
+- fixed assigning template for staticdeployment control panel [radekj]
+
+0.7.10 (2011-02-22)
+-------------------
+
+- minor fixes to work with 'Sunburst Theme' [radekj]
+
+0.7.9 (2011-02-16)
+------------------
+
+- fixed import [radekj]
+
+0.7.8 (2011-02-16)
+------------------
+
+- added possibility to definfe custom extra condition checked before deploying each object [radekj]
+
+0.7.7 (2011-01-27)
+------------------
+
+- added possibility to add additional path in configuration file [radekj]
+
+0.7.6 (2010-11-16)
+------------------
+
+- fixed image links transformation for images with relative path [radekj]
+
+0.7.5 (2010-07-29)
+------------------
+
+- fixed image links transformation for images with '%20' entity in path [radekj]
+
+0.7.4 (2010-07-15)
+------------------
+
+- deploying images defined in local styles [radekj]
+
+0.7.3 (2010-07-14)
+------------------
+
+- fixed deploying attached css files [radekj]
+
+0.7.2 (2010-07-13)
+------------------
+
+- inputs marked as required [radekj]
+- generating only active content [radekj]
+
+0.7.1 (2010-07-08)
+------------------
+
+- added spinner icon [radekj]
+
+0.7.0 (2010-07-07)
+------------------
+
+- asynchronous submitting of the deployment form [radekj]
+- created polish translations [radekj]
+
+0.6.0 (2010-06-16)
+------------------
+
+- created 'Static exporter' global role allowing to perform export action [radekj]
+
+0.5.10 (2010-05-24)
+-------------------
+
+- fixed transformation of images links [radekj]
+
+0.5.9 (2010-05-13)
+------------------
+
+- omiting deploying objects without view permission for anonymuos user in the whole aq_chain [radekj]
+
+0.5.8 (2010-05-08)
+------------------
+
+- fixed dumping image fields [radekj]
+
+0.5.7 (2010-02-11)
+------------------
+
+- fixed dumping file fields content [radekj]
+
+0.5.6 (2010-02-10)
+------------------
+
+- improved logging exceptions [radekj]
+- fixed example config [radekj]
+
+0.5.5 (2010-02-03)
+------------------
+
+- improved logging exceptions [radekj]
+
+0.5.4 (2010-01-19)
+------------------
+
+- fixed dumping images is all defined dimensions [radekj]
+
+0.5.3 (2010-01-08)
+------------------
+
+- possibility to define review_states of content to deploy [radekj]
+
+0.5.2 (2009-12-29)
+------------------
+
+- deploying only content in 'published' state [radekj]
+
+0.5.1 (2009-12-18)
+------------------
+
+- fixed dumping ATImage in all defined dimensions [radekj]
+- added posibility to turn-off dumping registry files [radekj]
+
+0.5.0 (2009-12-07)
+------------------
+
+- configuration moved to staticdeployment.ini file [radekj]
+- changed way of configuring skins to deploy [radekj]
+- possibility to deploy many skin layers [radekj]
+
+0.4.0 (2009-12-01)
+------------------
+
+- added possibility to specify path in fs to dump additional-files [radekj]
+- added possibility to define protocol in domains configuration [radekj]
+
+0.3.2 (2009-11-05)
+------------------
+
+- domain validation will not refuse IP addresses [sargo]
+
+0.3.1 (2009-11-02)
+------------------
+
+- better domains manipulations [sargo]
+- handle 404 when sitemap.xml.gz is disabled [sargo]
+
+0.3.0 (2009-10-19)
+------------------
+
+- deploying images in all defined sizes [stxnext]
+
+0.2.1 (2009-10-06)
+------------------
+
+- allow port number in domain name [sargo]
+- README update [sargo]
+
+0.2.0 (2009-10-02)
+------------------
+
+- support for OFS.Image.Image objects [sargo]
+- support for Products.Five.browser.resource.Resource (linked like ++resource++) objects [sargo]
+- support for Quills (Weblog, WeblogEntry) objects [sargo]
+
+0.1.0 (2009-09-29)
+------------------
+
+- Initial release [sargo]

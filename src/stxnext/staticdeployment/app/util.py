@@ -432,7 +432,7 @@ class StaticDeploymentUtils(object):
             if is_page:
                 filename = os.path.join(filename, 'index.html')
             # where to write view content (based on view path)
-            path = urlparse(self.context.portal_url()).path
+            path = urlparse(self.context.portal_url())[2]
             filename = '/'.join((path, filename))
             # write view content on the disk
             self._write(filename, content, fullview_path)
@@ -573,7 +573,7 @@ class StaticDeploymentUtils(object):
         scalenames = sizes.keys()
         scalenames.append(None)
         for scalename in scalenames:
-            image =  field.getScale(obj, scale=scalename)
+            image = field.getScale(obj, scale=scalename)
             if image:
                 #store original image
                 if scalename is None:
@@ -738,9 +738,14 @@ class StaticDeploymentUtils(object):
                 parent_obj = self.context.restrictedTraverse(unquote(objpath.rsplit('/', 1)[0]), None)
                 if parent_obj:
                     image_name = objpath.rsplit('/', 1)[-1]
-                    fieldname = image_name.split('_', 1)[0]
-                    obj = self.context.restrictedTraverse(unquote('/'.join(parent_obj.getPhysicalPath() + (fieldname,))), None)
-                    objpath = os.path.join(objpath, 'image.jpg')
+                    if hasattr(parent_obj, 'schema'):
+                        for field in parent_obj.schema.fields():
+                            fieldname = field.getName()
+                            if image_name.startswith(fieldname):
+                                scalename = image_name[len(fieldname) + 1:]
+                                obj = field.getScale(parent_obj, scalename)
+                                objpath = os.path.join(objpath, 'image.jpg')
+                                continue
             if not obj:
                 if '/@@images/' in objpath:
                     parent_path, image_name = objpath.split('/@@images/')
@@ -750,7 +755,7 @@ class StaticDeploymentUtils(object):
                         try:
                             images_view = getMultiAdapter((parent_obj, self.request), name='images')
                             field = images_view.field(fieldname)
-                            obj = field.getScale(parent_obj)
+                            obj = field.getScale(parent_obj, scalename)
                             objpath = os.path.join(parent_path, '_'.join((fieldname, scalename)), 'image.jpg')
                         except ComponentLookupError:
                             pass
