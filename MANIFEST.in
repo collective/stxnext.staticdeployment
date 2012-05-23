@@ -3,3 +3,6 @@ global-include *.rst
 global-include *.zcml
 global-include *.xml
 global-include *.pt
+global-include *.png
+global-include *.po
+global-include *.pot
