@@ -97,7 +97,8 @@ class StaticDeploymentUtils(object):
         self.context.changeSkin(self.defaultskin_name, self.request)
         self.request.set(request_varname, self.defaultskin_name)
         self.request.method = 'GET'
-
+        self.request.set('PUBLISHED', None)
+        
         self.base_dir = os.path.normpath(self.deployment_directory)
         self.deployed_resources = []
 
@@ -300,7 +301,7 @@ class StaticDeploymentUtils(object):
         """
         # get content for Anonymous users, not authenticated
         noSecurityManager()
-        # assing values
+        # assigning values
         self.context = context
         self.request = request
         self.section = section

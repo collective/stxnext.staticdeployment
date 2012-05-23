@@ -1,4 +1,5 @@
 import os, logging
+from posixpath import curdir, sep, pardir, join, abspath, commonprefix
 from ConfigParser import (Error as ConfigParserError,
         ConfigParser as GenericConfigParser, NoOptionError)
 
@@ -18,6 +19,19 @@ def get_config_path():
     if not os.path.isfile(config_path):
         config_path = os.path.join(os.path.dirname(__file__), 'etc', 'staticdeployment.ini')
     return config_path
+
+def relpath(path, start=curdir):
+    """Return a relative version of a path"""
+    if not path:
+        raise ValueError("no path specified")
+    start_list = abspath(start).split(sep)
+    path_list = abspath(path).split(sep)
+    # Work out how much of the filepath is shared by start and path.
+    i = len(commonprefix([start_list, path_list]))
+    rel_list = [pardir] * (len(start_list)-i) + path_list[i:]
+    if not rel_list:
+        return curdir
+    return join(*rel_list)
 
 
 class ConfigParser(GenericConfigParser):

@@ -19,7 +19,7 @@ try:
 except:
     PLONE_APP_BLOB_INSTALLED = False
 
-
+from stxnext.staticdeployment.utils import relpath
 from stxnext.staticdeployment.interfaces import (IPostTransformation,
         IStaticDeploymentUtils, ITransformation)
 
@@ -27,6 +27,7 @@ from stxnext.staticdeployment.interfaces import (IPostTransformation,
 SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 FILE_PATTERN = re.compile(r"<\s*(?:a)\s+[^>]*(?:href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 LINK_PATTERN = re.compile(r"<\s*[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
+CSS_LINK_PATTERN = re.compile(r"@import\s*(?:url)\s*\(\s*(.*)[\)]", re.IGNORECASE)
 BASE_PATTERN = re.compile(r"<\s*base\s+[^>]*href\s*=\s*[\"\']([^\"\'>]+)[\"\']", re.IGNORECASE)
 
 
@@ -137,7 +138,7 @@ class RelativeLinksPostTransformation(PostTransformation):
         add_index = dutils.add_index
         #fix <base> tag
         text = BASE_PATTERN.sub('<base', text)
-        matches = LINK_PATTERN.findall(text)
+        matches = LINK_PATTERN.findall(text) + CSS_LINK_PATTERN.findall(text)
 
         for match in set(matches):
             clean_match = match.strip('"').strip("'").encode('utf-8')
@@ -164,10 +165,9 @@ class RelativeLinksPostTransformation(PostTransformation):
             return destination
         u_dest = urlsplit(destination)
         u_src = urlsplit(source)
-        _relpath = posixpath.relpath(u_dest.path, posixpath.dirname(u_src.path))
-
-        return urlunsplit(('', '', _relpath, u_dest.query,
-            u_dest.fragment))
+        _relpath = relpath(u_dest[2], posixpath.dirname(u_src[2]))
+        return urlunsplit(('', '', _relpath, u_dest[3],
+            u_dest[4]))
 
 
     @staticmethod

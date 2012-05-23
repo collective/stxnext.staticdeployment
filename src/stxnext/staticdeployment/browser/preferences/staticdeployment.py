@@ -3,6 +3,7 @@ import os, shutil, logging, traceback, thread
 from ConfigParser import ParsingError
 from datetime import datetime
 
+from AccessControl.SecurityManagement import newSecurityManager
 from plone.app.controlpanel.events import ConfigurationChangedEvent
 from plone.app.controlpanel.form import ControlPanelForm
 from plone.app.form.validators import null_validator
@@ -238,6 +239,8 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
                 skins_tool = getToolByName(self.context, 'portal_skins')
                 deployment_utils.revert_resources_tools_mode(self.context, initial_debugmode)
                 deployment_utils.revert_request_modifications(self.context, self.request)
+                user = self.request.get('AUTHENTICATED_USER')
+                newSecurityManager(self.request, user)
 
     def _on_save(self, data):
         """
