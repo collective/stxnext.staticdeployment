@@ -6,3 +6,5 @@ global-include *.pt
 global-include *.png
 global-include *.po
 global-include *.pot
+global-include *.gif
+global-include *.js
