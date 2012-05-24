@@ -8,3 +8,4 @@ global-include *.po
 global-include *.pot
 global-include *.gif
 global-include *.js
+global-include *.ini
