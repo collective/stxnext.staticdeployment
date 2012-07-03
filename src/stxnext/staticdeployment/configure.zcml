@@ -5,6 +5,8 @@
 	  xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="stxnext.staticdeployment">
 
+    <include package="Products.CMFCore" />
+
     <five:registerPackage package="." initialize=".initialize" />
 	  <include package="." file="permissions.zcml" />
 	
