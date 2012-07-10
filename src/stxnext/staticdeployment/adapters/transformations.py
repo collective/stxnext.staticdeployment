@@ -96,8 +96,15 @@ class ChangeImageLinksTransformation(PostTransformation):
                 if not obj:
                     if '/@@images/' in match_path:
                         parent_path, image_name = match_path.split('/@@images/')
-                        fieldname, scalename = image_name.split('/')
-                        new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
+                        spl_img_name = image_name.split('/')
+                        if len(spl_img_name) == 1:
+                            # no scalename in path
+                            fieldname = spl_img_name
+                            new_path = '/'.join((parent_path, 'image.jpg'))
+                        else:
+                            # scalename in path 
+                            fieldname, scalename = spl_img_name
+                            new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
                         text = text.replace(match_path, new_path + '/image.jpg')
 
         return text

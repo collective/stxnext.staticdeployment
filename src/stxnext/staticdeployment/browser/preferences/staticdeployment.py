@@ -12,7 +12,7 @@ from plone.protect import CheckAuthenticator
 from zope.component import getMultiAdapter, getUtility
 from zope.interface import Interface, implements
 from zope.event import notify
-from zope.formlib.form import Fields, FormFields, action, applyChanges
+from zope.formlib.form import FormFields, action, applyChanges
 from zope.schema import TextLine, Bool, Tuple, Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.schema.interfaces import IVocabularyFactory
