@@ -73,17 +73,14 @@ class ChangeImageLinksTransformation(PostTransformation):
         matches = SRC_PATTERN.findall(text)
         for match in set(matches):
             match_path = match.strip('"').strip("'").replace('../', '').replace('%20', ' ').lstrip('/').encode('utf-8')
-            obj = self.context.restrictedTraverse(match_path, None)
+            obj = self.context.unrestrictedTraverse(match_path, None)
+            ext = match_path.rsplit('.', 1)
+            ext = ext in ('png', 'jpg', 'gif', 'jpeg') and ext or 'jpg'
             if obj and isinstance(obj, ATImage):
-                text = text.replace(match, match[:-1] + '/image.%s' % match.rsplit('.', 1)[-1])
+                text = text.replace(match_path, match_path + '/image.%s' % ext)
             if hasattr(obj, 'getBlobWrapper'):
                 if 'image' in obj.getBlobWrapper().getContentType():
-                    if match_path.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
-                        text = text.replace(match, os.path.join(match[:-1],
-                            'image.%s' % match.rsplit('.', 1)[-1]))
-                    else:
-                        text = text.replace(match, os.path.join(match[:-1],
-                            'image.jpg%s' % match[-1]))
+                    text = text.replace(match_path, match_path + '/image.%s' % ext)
             if not obj:
                 try:
                     path, filename = match_path.rsplit('/', 1)
@@ -96,8 +93,15 @@ class ChangeImageLinksTransformation(PostTransformation):
                 if not obj:
                     if '/@@images/' in match_path:
                         parent_path, image_name = match_path.split('/@@images/')
-                        fieldname, scalename = image_name.split('/')
-                        new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
+                        spl_img_name = image_name.split('/')
+                        if len(spl_img_name) == 1:
+                            # no scalename in path
+                            fieldname = spl_img_name
+                            new_path = '/'.join((parent_path, 'image.jpg'))
+                        else:
+                            # scalename in path 
+                            fieldname, scalename = spl_img_name
+                            new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
                         text = text.replace(match_path, new_path + '/image.jpg')
 
         return text

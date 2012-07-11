@@ -522,14 +522,14 @@ class StaticDeploymentUtils(object):
                 if view:
                     try:
                         return view.context()
-                    except ContentProviderLookupError:
+                    except (ContentProviderLookupError, TypeError):
                         pass
 
                 view = obj.restrictedTraverse(view_name, None)
                 if view:
                     try:
                         return view.context()
-                    except AttributeError:
+                    except (AttributeError, TypeError):
                         try:
                             return view()
                         except Exception, error:
@@ -730,7 +730,7 @@ class StaticDeploymentUtils(object):
 
             if objpath in self.deployed_resources:
                 continue
-            obj = self.context.restrictedTraverse(objpath, None)
+            obj = self.context.unrestrictedTraverse(objpath, None)
             if objpath.rsplit('/', 1)[-1].split('.')[0] == 'image':
                 obj = self.context.restrictedTraverse(objpath.rsplit('.', 1)[0], None)
             if not obj:
@@ -750,14 +750,21 @@ class StaticDeploymentUtils(object):
             if not obj:
                 if '/@@images/' in objpath:
                     parent_path, image_name = objpath.split('/@@images/')
-                    parent_obj = self.context.restrictedTraverse(unquote(parent_path), None)
+                    parent_obj = self.context.unrestrictedTraverse(unquote(parent_path), None)
                     if parent_obj:
-                        fieldname, scalename = image_name.split('/')
+                        spl_img_name = image_name.split('/')
+                        if len(spl_img_name) == 1:
+                            # no scalename in path
+                            fieldname = spl_img_name
+                            scalename = None
+                            objpath = '/'.join((parent_path, 'image.jpg'))
+                        else:
+                            fieldname, scalename = spl_img_name
+                            objpath = os.path.join(parent_path, '_'.join((fieldname, scalename)), 'image.jpg')
                         try:
                             images_view = getMultiAdapter((parent_obj, self.request), name='images')
                             field = images_view.field(fieldname)
                             obj = field.getScale(parent_obj, scalename)
-                            objpath = os.path.join(parent_path, '_'.join((fieldname, scalename)), 'image.jpg')
                         except ComponentLookupError:
                             pass
             if not obj:
