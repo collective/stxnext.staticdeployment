@@ -764,7 +764,8 @@ class StaticDeploymentUtils(object):
                         try:
                             images_view = getMultiAdapter((parent_obj, self.request), name='images')
                             field = images_view.field(fieldname)
-                            obj = field.getScale(parent_obj, scalename)
+                            if field:
+                                obj = field.getScale(parent_obj, scalename)
                         except ComponentLookupError:
                             pass
             if not obj:
