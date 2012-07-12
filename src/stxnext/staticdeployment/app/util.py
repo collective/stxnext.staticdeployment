@@ -755,7 +755,7 @@ class StaticDeploymentUtils(object):
                         spl_img_name = image_name.split('/')
                         if len(spl_img_name) == 1:
                             # no scalename in path
-                            fieldname = spl_img_name
+                            fieldname = spl_img_name[0]
                             scalename = None
                             objpath = '/'.join((parent_path, 'image.jpg'))
                         else:
@@ -764,7 +764,8 @@ class StaticDeploymentUtils(object):
                         try:
                             images_view = getMultiAdapter((parent_obj, self.request), name='images')
                             field = images_view.field(fieldname)
-                            obj = field.getScale(parent_obj, scalename)
+                            if field:
+                                obj = field.getScale(parent_obj, scalename)
                         except ComponentLookupError:
                             pass
             if not obj:
