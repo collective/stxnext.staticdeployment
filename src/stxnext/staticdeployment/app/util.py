@@ -755,7 +755,7 @@ class StaticDeploymentUtils(object):
                         spl_img_name = image_name.split('/')
                         if len(spl_img_name) == 1:
                             # no scalename in path
-                            fieldname = spl_img_name
+                            fieldname = spl_img_name[0]
                             scalename = None
                             objpath = '/'.join((parent_path, 'image.jpg'))
                         else:
