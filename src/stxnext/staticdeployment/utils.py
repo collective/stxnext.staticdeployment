@@ -33,6 +33,18 @@ def relpath(path, start=curdir):
         return curdir
     return join(*rel_list)
 
+def reset_request(fn):
+    """
+    Decorator function for resetting the request variables
+    that may be added in the rendered templates
+    """
+    def wrapped(*args, **kwargs):
+        req = args[0].request
+        req['disable_plone.leftcolumn'] = None
+        req['disable_plone.rightcolumn'] = None
+        return fn(*args, **kwargs)
+    return wrapped
+
 
 class ConfigParser(GenericConfigParser):
     """

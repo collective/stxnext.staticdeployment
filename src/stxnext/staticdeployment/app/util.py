@@ -46,7 +46,7 @@ from Products.statusmessages.interfaces import IStatusMessage
 from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeployment
 from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep, IExtraDeploymentCondition, \
     IPostTransformation, IImageTransformation
-from stxnext.staticdeployment.utils import ConfigParser, get_config_path
+from stxnext.staticdeployment.utils import ConfigParser, get_config_path, reset_request
 
 
 try:
@@ -399,7 +399,7 @@ class StaticDeploymentUtils(object):
                 filename, content = self._apply_image_transforms(filename, content)
             self._write(filename, content)
 
-
+    @reset_request
     def _deploy_views(self, views, is_page=False):
         """
         Deploy views of context as pages.
@@ -439,6 +439,7 @@ class StaticDeploymentUtils(object):
             self._write(filename, content, fullview_path)
 
 
+    @reset_request
     def _render_obj(self, obj):
         """
         Render object to string.
