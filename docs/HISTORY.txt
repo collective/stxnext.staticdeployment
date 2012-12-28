@@ -1,6 +1,9 @@
 Changelog
 =========
- 
+1.0.3 (unreleased)
+------------------
+- Fixed bug with missing porltets (tnanks to Alessandro Ruocco)
+
 1.0.2 (12.07.2012)
 ------------------
 - Fixed bug with image scale name exctraction
