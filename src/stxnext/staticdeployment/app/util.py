@@ -55,6 +55,11 @@ try:
 except ImportError:
     PLONE_RESOURCE_INSTALLED = False
 
+try:
+    from plone.resource.interfaces import IResourceDirectory
+except:
+    from zope.interface import Interface as IResourceDirectory
+
 
 log = logging.getLogger(__name__)
 
@@ -420,7 +425,12 @@ class StaticDeploymentUtils(object):
                     log.warning("Unable traverse to '%s'!" % context_path)
                     continue
 
-            content_obj = context.restrictedTraverse(view_name, None)
+            # plone.resource file system resource
+            if IResourceDirectory.providedBy(context):
+                content_obj = context[view_name]
+            else:
+                content_obj = context.restrictedTraverse(view_name, None)
+
             # get object's view content 
             if ismethod(content_obj) or isfunction(content_obj):
                 view = queryMultiAdapter((context, self.request), name=view_name)
