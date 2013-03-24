@@ -723,7 +723,9 @@ class StaticDeploymentUtils(object):
             if netloc and netloc != portal_url:
                 ## external link
                 continue
-
+            elif path.startswith('image/svg+xml;base64'):
+                ## images defined in css
+                continue
             if path.startswith('/'):
                 objpath = path[1:]
             else:
