@@ -367,7 +367,6 @@ class StaticDeploymentUtils(object):
         registry_view = getMultiAdapter((self.context, self.request), name='resourceregistries_%s_view' % resource_name)
         registry = registry_view.registry()
         resources = getattr(registry_view, resource_type)()
-
         for resource in resources:
             filename = urlparse(resource['src'])[2]
             try:
@@ -375,8 +374,8 @@ class StaticDeploymentUtils(object):
             except TypeError:
                 log.exception("File '%s' not found when deploying '%s'!" % (filename, registry_type))
                 continue
-
-            self._write(filename, content)
+            # so html isn't added...
+            self._write(filename, content, omit_transform=True)
 
 
     def _deploy_skinstool_files(self, files):
