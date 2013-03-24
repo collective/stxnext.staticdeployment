@@ -1,7 +1,18 @@
 Changelog
 =========
+
 1.0.3 (unreleased)
 ------------------
+
+- fix retrieving plone.resource files
+  [vangheem]
+
+- fix trying to parse data images in css
+  [vangheemj]
+
+- fix use a relative paths in css
+  [vangheem]
+
 - Fixed bug with missing porltets (tnanks to Alessandro Ruocco)
 
 1.0.2 (12.07.2012)

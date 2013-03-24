@@ -720,10 +720,14 @@ class StaticDeploymentUtils(object):
                 ## internal anchor
                 continue
 
+            # fix "../" in paths
+            path = os.path.normpath(path)
+
             if netloc and netloc != portal_url:
                 ## external link
                 continue
-            elif path.startswith('image/svg+xml;base64'):
+            elif path.startswith('image/svg+xml;base64') or \
+                 path.startswith('image/png;base64'):
                 ## images defined in css
                 continue
             if path.startswith('/'):
