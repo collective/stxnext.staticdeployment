@@ -720,9 +720,6 @@ class StaticDeploymentUtils(object):
                 ## internal anchor
                 continue
 
-            # fix "../" in paths
-            path = os.path.normpath(path)
-
             if netloc and netloc != portal_url:
                 ## external link
                 continue
@@ -743,6 +740,8 @@ class StaticDeploymentUtils(object):
             objpath_spl = objpath.split('/', 1)
             if objpath_spl[0] == 'plone' and len(objpath_spl) > 1:
                 objpath = objpath_spl[1]
+            # fix "../" in paths
+            objpath = os.path.normpath(objpath)
 
             if objpath in self.deployed_resources:
                 continue
