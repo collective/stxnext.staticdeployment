@@ -76,7 +76,7 @@ class ChangeImageLinksTransformation(PostTransformation):
             if type(match_path) == unicode:
                 match_path = match_path.encode('utf-8')
             obj = self.context.unrestrictedTraverse(match_path, None)
-            ext = match_path.rsplit('.', 1)
+            ext = match_path.split('.')[-1].lower()
             ext = ext in ('png', 'jpg', 'gif', 'jpeg') and ext or 'jpg'
             if obj and isinstance(obj, ATImage):
                 text = text.replace(match_path, match_path + '/image.%s' % ext)

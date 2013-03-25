@@ -1,7 +1,14 @@
 Changelog
 =========
 
-1.0.3 (unreleased)
+1.0.4 (unreleased)
+------------------
+
+- handle image extensions correctly
+  [vangheem]
+
+
+1.0.3 (2013-03-25)
 ------------------
 
 - better unicode handling
