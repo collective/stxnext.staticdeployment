@@ -361,7 +361,10 @@ class StaticDeploymentUtils(object):
                 try:
                     self._deploy_content(obj, is_page=is_page)
                 except:
-                    log.error("error exporting object: %s" % '/'.join(obj.getPhysicalPath()))
+                    log.error("error exporting object: %s\n%s" % (
+                        '/'.join(obj.getPhysicalPath()),
+                        traceback.format_exc())
+                    )
 
         ## find and run additional deployment steps
         self._applay_extra_deployment_steps(modification_date)
