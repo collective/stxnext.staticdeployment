@@ -1,6 +1,29 @@
 Changelog
 =========
- 
+
+1.0.3 (unreleased)
+------------------
+
+- better unicode handling
+  [vangheem]
+
+- make sure to not html transform css and js resources
+  [vangheem]
+
+- fix diazo support
+  [vangheem]
+
+- fix retrieving plone.resource files
+  [vangheem]
+
+- fix trying to parse data images in css
+  [vangheemj]
+
+- fix use a relative paths in css
+  [vangheem]
+
+- Fixed bug with missing porltets (tnanks to Alessandro Ruocco)
+
 1.0.2 (12.07.2012)
 ------------------
 - Fixed bug with image scale name exctraction

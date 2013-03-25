@@ -72,7 +72,9 @@ class ChangeImageLinksTransformation(PostTransformation):
     def __call__(self, text, file_path=None):
         matches = SRC_PATTERN.findall(text)
         for match in set(matches):
-            match_path = match.strip('"').strip("'").replace('../', '').replace('%20', ' ').lstrip('/').encode('utf-8')
+            match_path = match.strip('"').strip("'").replace('../', '').replace('%20', ' ').lstrip('/')
+            if type(match_path) == unicode:
+                match_path = match_path.encode('utf-8')
             obj = self.context.unrestrictedTraverse(match_path, None)
             ext = match_path.rsplit('.', 1)
             ext = ext in ('png', 'jpg', 'gif', 'jpeg') and ext or 'jpg'
@@ -115,7 +117,9 @@ class ChangeFileLinksTransformation(PostTransformation):
     def __call__(self, text, file_path=None):
         matches = FILE_PATTERN.findall(text)
         for match in set(matches):
-            match_path = match.strip('"').strip("'").replace('../', '').replace('%20', ' ').lstrip('/').encode('utf-8')
+            match_path = match.strip('"').strip("'").replace('../', '').replace('%20', ' ').lstrip('/')
+            if type(match_path) == unicode:
+                match_path = match_path.encode('utf-8')
             obj = self.context.restrictedTraverse(match_path, None)
             if hasattr(obj, 'getBlobWrapper'):
                 if 'image' not in obj.getBlobWrapper().getContentType():

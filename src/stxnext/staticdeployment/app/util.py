@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, re, logging, inspect
+import os, re, logging, inspect, traceback
 from inspect import ismethod, isfunction
 from AccessControl.PermissionRole import rolesForPermissionOn
 from AccessControl.SecurityManagement import noSecurityManager
@@ -54,6 +54,11 @@ try:
     PLONE_RESOURCE_INSTALLED = True
 except ImportError:
     PLONE_RESOURCE_INSTALLED = False
+
+try:
+    from plone.resource.interfaces import IResourceDirectory
+except:
+    from zope.interface import Interface as IResourceDirectory
 
 
 log = logging.getLogger(__name__)
@@ -185,10 +190,17 @@ class StaticDeploymentUtils(object):
             # Condition added to keep compatibility with
             # existing transformations after the change in API
             log.debug('Processing %s post-transformation' % t_name)
-            if len(inspect.getargspec(t.__call__)[0]) == 3:
-                html = t(html, file_path)
-            else:
-                html = t(html)
+            try:
+                if len(inspect.getargspec(t.__call__)[0]) == 3:
+                    html = t(html, file_path)
+                else:
+                    html = t(html)
+            except:
+                if not file_path:
+                    file_path = ''
+                log.error('error in %s post-transformation(%s)\n%s' % (
+                    t_name, file_path, traceback.format_exc()
+                    ))
         return html
 
 
@@ -346,7 +358,13 @@ class StaticDeploymentUtils(object):
                     continue
                 # check if object is a normal page
                 is_page = brain.meta_type in self.page_types
-                self._deploy_content(obj, is_page=is_page)
+                try:
+                    self._deploy_content(obj, is_page=is_page)
+                except:
+                    log.error("error exporting object: %s\n%s" % (
+                        '/'.join(obj.getPhysicalPath()),
+                        traceback.format_exc())
+                    )
 
         ## find and run additional deployment steps
         self._applay_extra_deployment_steps(modification_date)
@@ -362,7 +380,6 @@ class StaticDeploymentUtils(object):
         registry_view = getMultiAdapter((self.context, self.request), name='resourceregistries_%s_view' % resource_name)
         registry = registry_view.registry()
         resources = getattr(registry_view, resource_type)()
-
         for resource in resources:
             filename = urlparse(resource['src'])[2]
             try:
@@ -370,8 +387,8 @@ class StaticDeploymentUtils(object):
             except TypeError:
                 log.exception("File '%s' not found when deploying '%s'!" % (filename, registry_type))
                 continue
-
-            self._write(filename, content)
+            # so html isn't added...
+            self._write(filename, content, omit_transform=True)
 
 
     def _deploy_skinstool_files(self, files):
@@ -420,7 +437,12 @@ class StaticDeploymentUtils(object):
                     log.warning("Unable traverse to '%s'!" % context_path)
                     continue
 
-            content_obj = context.restrictedTraverse(view_name, None)
+            # plone.resource file system resource
+            if IResourceDirectory.providedBy(context):
+                content_obj = context[view_name]
+            else:
+                content_obj = context.restrictedTraverse(view_name, None)
+
             # get object's view content 
             if ismethod(content_obj) or isfunction(content_obj):
                 view = queryMultiAdapter((context, self.request), name=view_name)
@@ -714,7 +736,10 @@ class StaticDeploymentUtils(object):
             if netloc and netloc != portal_url:
                 ## external link
                 continue
-
+            elif path.startswith('image/svg+xml;base64') or \
+                 path.startswith('image/png;base64'):
+                ## images defined in css
+                continue
             if path.startswith('/'):
                 objpath = path[1:]
             else:
@@ -728,6 +753,8 @@ class StaticDeploymentUtils(object):
             objpath_spl = objpath.split('/', 1)
             if objpath_spl[0] == 'plone' and len(objpath_spl) > 1:
                 objpath = objpath_spl[1]
+            # fix "../" in paths
+            objpath = os.path.normpath(objpath)
 
             if objpath in self.deployed_resources:
                 continue
@@ -839,7 +866,8 @@ class StaticDeploymentUtils(object):
             log.exception("Error trying to dump data to '%s' file!" % filename)
             return
 
-        if RE_NOT_BINARY.search(filename) and not omit_transform:
+        if RE_NOT_BINARY.search(filename) and not omit_transform and \
+                not filename.endswith('.js') and not filename.endswith('.css'):
             pre_transformated_content = self._apply_transforms(content)
             post_transformated_content = self._apply_post_transforms(
                     pre_transformated_content, file_path=file_path)
