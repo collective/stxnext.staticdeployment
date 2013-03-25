@@ -167,7 +167,7 @@ class StaticDeploymentUtils(object):
             raise e
 
 
-    def _apply_transforms(self, html):
+    def _apply_transforms(self, html, filename=None):
         """
         Apply transforms to output html.
         """
@@ -176,7 +176,14 @@ class StaticDeploymentUtils(object):
 
         for t_name, t in transformations:
             log.debug('Processing %s transformation' % t_name)
-            html = t(html)
+            try:
+                html = t(html)
+            except:
+                if filename is None:
+                    filename = ''
+                log.error('error processing %s transformation(%s)\n%s' % (
+                    t_name, filename, traceback.format_exc()
+                    ))
         return html
 
 
@@ -215,7 +222,12 @@ class StaticDeploymentUtils(object):
         for t_name, t in transformations:
             log.debug('Processing %s image transformation for %s' % (t_name,
                 filename))
-            filename, image = t(filename, image)
+            try:
+                filename, image = t(filename, image)
+            except:
+                log.error('error in %s image-transformation(%s)\n%s' % (
+                    t_name, filename, traceback.format_exc()
+                    ))
         return filename, image
 
 
@@ -867,7 +879,7 @@ class StaticDeploymentUtils(object):
 
         if RE_NOT_BINARY.search(filename) and not omit_transform and \
                 not filename.endswith('.js') and not filename.endswith('.css'):
-            pre_transformated_content = self._apply_transforms(content)
+            pre_transformated_content = self._apply_transforms(content, filename)
             post_transformated_content = self._apply_post_transforms(
                     pre_transformated_content, file_path=file_path)
         else:
