@@ -358,7 +358,10 @@ class StaticDeploymentUtils(object):
                     continue
                 # check if object is a normal page
                 is_page = brain.meta_type in self.page_types
-                self._deploy_content(obj, is_page=is_page)
+                try:
+                    self._deploy_content(obj, is_page=is_page)
+                except:
+                    log.error("error exporting object: %s" % '/'.join(obj.getPhysicalPath()))
 
         ## find and run additional deployment steps
         self._applay_extra_deployment_steps(modification_date)
