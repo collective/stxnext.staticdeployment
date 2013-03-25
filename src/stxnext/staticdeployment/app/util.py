@@ -799,7 +799,13 @@ class StaticDeploymentUtils(object):
                 else:
                     objpath = os.path.join(objpath, 'image.jpg')
 
-            content = self._render_obj(obj)
+            try:
+                content = self._render_obj(obj)
+            except AttributeError:
+                # XXX this can happen with CachedResource?
+                # can't figure out how but let's not error if so...
+                log.warning("Unable to deploy resource '%s'!" % objpath)
+                continue
             if content is None:
                 continue
 
