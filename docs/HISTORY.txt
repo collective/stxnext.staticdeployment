@@ -4,6 +4,9 @@ Changelog
 1.0.3 (unreleased)
 ------------------
 
+- better unicode handling
+  [vangheem]
+
 - make sure to not html transform css and js resources
   [vangheem]
 
