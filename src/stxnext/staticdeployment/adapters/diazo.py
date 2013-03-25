@@ -27,7 +27,12 @@ class ApplyDiazoThemeTransformation(PostTransformation):
         req['BASE1'] = 'http://apply_diazo_theme.com'
         theme_transform = ThemeTransform(context, req)
         encoding = 'utf-8'
-        transformed_text = theme_transform.transformIterable(text, encoding)
-        if transformed_text:
-            text = transformed_text.serialize()
+        try:
+            encoded = [text.encode(encoding)]
+            transformed_text = theme_transform.transformIterable(
+                encoded, encoding)
+            if transformed_text:
+                text = transformed_text.serialize()
+        except UnicodeDecodeError:
+            pass
         return text
