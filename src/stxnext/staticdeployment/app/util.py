@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, re, logging, inspect
+import os, re, logging, inspect, traceback
 from inspect import ismethod, isfunction
 from AccessControl.PermissionRole import rolesForPermissionOn
 from AccessControl.SecurityManagement import noSecurityManager
@@ -190,10 +190,17 @@ class StaticDeploymentUtils(object):
             # Condition added to keep compatibility with
             # existing transformations after the change in API
             log.debug('Processing %s post-transformation' % t_name)
-            if len(inspect.getargspec(t.__call__)[0]) == 3:
-                html = t(html, file_path)
-            else:
-                html = t(html)
+            try:
+                if len(inspect.getargspec(t.__call__)[0]) == 3:
+                    html = t(html, file_path)
+                else:
+                    html = t(html)
+            except:
+                if not file_path:
+                    file_path = ''
+                log.error('error in %s post-transformation(%s)\n%s' % (
+                    t_name, file_path, traceback.format_exc()
+                    ))
         return html
 
 
