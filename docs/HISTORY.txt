@@ -4,6 +4,9 @@ Changelog
 1.0.3 (unreleased)
 ------------------
 
+- make sure to not html transform css and js resources
+  [vangheem]
+
 - fix diazo support
   [vangheem]
 

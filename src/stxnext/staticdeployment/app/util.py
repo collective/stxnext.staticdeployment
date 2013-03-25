@@ -853,7 +853,8 @@ class StaticDeploymentUtils(object):
             log.exception("Error trying to dump data to '%s' file!" % filename)
             return
 
-        if RE_NOT_BINARY.search(filename) and not omit_transform:
+        if RE_NOT_BINARY.search(filename) and not omit_transform and \
+                not filename.endswith('.js') and not filename.endswith('.css'):
             pre_transformated_content = self._apply_transforms(content)
             post_transformated_content = self._apply_post_transforms(
                     pre_transformated_content, file_path=file_path)
