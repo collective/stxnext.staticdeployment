@@ -26,6 +26,7 @@ setup (
     install_requires=[
         'setuptools',
         'BeautifulSoup',
+        'five.globalrequest'
        ],
 
     extras_require = {

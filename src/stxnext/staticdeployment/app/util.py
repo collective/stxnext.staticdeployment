@@ -48,6 +48,7 @@ from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep
     IPostTransformation, IImageTransformation
 from stxnext.staticdeployment.utils import ConfigParser, get_config_path, reset_request
 
+from stxnext.staticdeployment.app.request import fakeRequest, restoreRequest
 
 try:
     from plone.resource.file import FilesystemFile
@@ -462,15 +463,16 @@ class StaticDeploymentUtils(object):
 
 
     @reset_request
-    def _render_obj(self, obj):
+    def _render_obj(self, obj, new_req=None):
         """
         Render object to string.
         """
         if isinstance(obj, basestring):
             return obj
+        if new_req is None:
+            new_req = self.request
         ## 'plone.global_sections' viewlet uses request['URL'] highlight
         ## selected tab, so it must be overridden but only for a while
-        initial_url = self.request['URL']
         try:
             obj_url = obj.absolute_url()
         except AttributeError:
@@ -478,15 +480,6 @@ class StaticDeploymentUtils(object):
                 obj_url = obj.context.absolute_url()
             except AttributeError:
                 obj_url = None
-
-        if obj_url:
-            self.request['URL'] = obj_url
-
-        ## breadcrumb implementation in quills uses 'PARENTS', so it must
-        ## be overriden but ony for a while
-        initial_parents = self.request['PARENTS']
-        if hasattr(obj, 'aq_chain'):
-            self.request['PARENTS'] = obj.aq_chain
 
         try:
             if IResource.providedBy(obj):
@@ -523,7 +516,7 @@ class StaticDeploymentUtils(object):
 
             if PLONE_RESOURCE_INSTALLED and isinstance(obj, FilesystemFile):
                 if not obj.request:
-                    obj.request = self.request
+                    obj.request = new_req
                     return obj().read()
 
             if PLONE_APP_BLOB_INSTALLED and IBlobWrapper.providedBy(obj):
@@ -536,9 +529,9 @@ class StaticDeploymentUtils(object):
                     return self._render_obj(def_page)
 
                 view_name = obj.getLayout()
-                view = queryMultiAdapter((obj, self.request), name=view_name)
+                view = queryMultiAdapter((obj, new_req), name=view_name)
                 if view_name == 'language-switcher':
-                    lang = self.request.get('LANGUAGE')
+                    lang = new_req.get('LANGUAGE')
                     def_page = getattr(obj, lang, None)
                     if def_page:
                         return self._render_obj(def_page)
@@ -557,8 +550,6 @@ class StaticDeploymentUtils(object):
                             return view()
                         except Exception, error:
                             log.warning("Unable to render view: '%s'! Error occurred: %s" % (view, error))
-                            pass
-
                 else:
                     try:
                         return obj()
@@ -566,12 +557,7 @@ class StaticDeploymentUtils(object):
                         pass
 
         finally:
-            ## back to initial url
-            if obj_url:
-                self.request['URL'] = initial_url
-
-            ## back to initial parents
-            self.request['PARENTS'] = initial_parents
+            pass
 
         log.warning("Not recognized object '%s'!" % repr(obj))
         return None
@@ -675,6 +661,11 @@ class StaticDeploymentUtils(object):
         """
         Deploy object as page.
         """
+        try:
+            new_req, orig_req = fakeRequest(obj)
+        except AttributeError:
+            # not a valid obj to override request with
+            new_req = None
         content = self._render_obj(obj)
         if content is None:
             return
@@ -719,6 +710,8 @@ class StaticDeploymentUtils(object):
                 self._deploy_file_field(obj, field)
             else:
                 continue
+        if new_req is not None:
+            restoreRequest(orig_req, new_req)
 
 
     def _deploy_resources(self, urls, base_path):
