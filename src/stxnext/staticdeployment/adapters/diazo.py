@@ -1,6 +1,7 @@
 """
 Transformation adapters for Diazo themes
 """
+import traceback
 from plone.app.theming.transform import ThemeTransform
 from plone.app.theming.interfaces import IThemeSettings
 from plone.registry.interfaces import IRegistry
@@ -8,7 +9,8 @@ from zope.component import queryUtility
 
 from transformations import PostTransformation
 from zope.globalrequest import getRequest
-
+import logging
+log = logging.getLogger(__name__)
 
 
 class ApplyDiazoThemeTransformation(PostTransformation):
@@ -34,5 +36,9 @@ class ApplyDiazoThemeTransformation(PostTransformation):
             if transformed_text:
                 text = transformed_text.serialize()
         except UnicodeDecodeError:
-            pass
+            if file_path is None:
+                file_path = ''
+            log.error('error processing diazo(%s)\n%s' % (
+                file_path, traceback.format_exc()
+                ))
         return text
