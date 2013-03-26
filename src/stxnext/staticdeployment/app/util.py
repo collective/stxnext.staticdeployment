@@ -61,6 +61,8 @@ try:
 except:
     from zope.interface import Interface as IResourceDirectory
 
+from zope.annotation import IAnnotations
+
 
 log = logging.getLogger(__name__)
 
@@ -647,7 +649,23 @@ class StaticDeploymentUtils(object):
                     # add as already deployed resource to avoid
                     # redeployment in _deploy_resources
                     self.deployed_resources.append(file_path)
-
+        annotations = IAnnotations(obj)
+        plone_scales = annotations.get('plone.scale', {})
+        for key in plone_scales.keys():
+            info = plone_scales[key]
+            data = info['data']
+            mimetype = info['mimetype']
+            extension = mimetype.split('/')[-1]
+            file_path = "%s/%s.%s" % (
+                obj.absolute_url_path().lstrip('/'),
+                info['uid'],
+                extension)
+            content = data.open('r').read()
+            if content:
+                file_path, content = self._apply_image_transforms(file_path, content)
+                if file_path not in self.deployed_resources:
+                    self._write(file_path, content)
+                    self.deployed_resources.append(file_path)
 
     def _deploy_blob_file_field(self, obj, field):
         """

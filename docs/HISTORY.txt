@@ -4,6 +4,9 @@ Changelog
 1.0.4 (unreleased)
 ------------------
 
+- fix using plone.scale image scales
+  [vangheem]
+
 - more diazo related fixes
   [vangheem]
 

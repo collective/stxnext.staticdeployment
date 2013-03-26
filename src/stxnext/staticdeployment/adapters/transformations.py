@@ -98,13 +98,20 @@ class ChangeImageLinksTransformation(PostTransformation):
                         spl_img_name = image_name.split('/')
                         if len(spl_img_name) == 1:
                             # no scalename in path
-                            fieldname = spl_img_name
-                            new_path = '/'.join((parent_path, 'image.jpg'))
+                            uid = spl_img_name[0]
+                            if '-' in uid:
+                                # seems to be actual uid for a custom scale here...
+                                # it should written out as [uid].[ext]
+                                new_path = '/'.join((parent_path, uid))
+                            else:
+                                # just use original if we can't figure this out...
+                                new_path = '/'.join((parent_path, 'image.%s' % ext))
                         else:
                             # scalename in path 
                             fieldname, scalename = spl_img_name
                             new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
-                        text = text.replace(match_path, new_path + '/image.jpg')
+                            new_path = new_path + '/image.jpg'
+                        text = text.replace(match_path, new_path)
 
         return text
 
