@@ -192,6 +192,8 @@
 
                 </fieldset>
 
+                <input id="only-object" type="hidden" name="only_object" value="" />
+
                 <metal:block define-slot="above_buttons" />
 
                 <div class="visualClear"><!-- --></div>

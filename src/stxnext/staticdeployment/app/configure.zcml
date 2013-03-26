@@ -6,5 +6,7 @@
     	provides="..interfaces.IStaticDeploymentUtils"
     	factory=".util.StaticDeploymentUtils"
     	/>
+
+    <include package="five.globalrequest" />
     
 </configure>

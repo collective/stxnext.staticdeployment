@@ -48,6 +48,7 @@ from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep
     IPostTransformation, IImageTransformation
 from stxnext.staticdeployment.utils import ConfigParser, get_config_path, reset_request
 
+from stxnext.staticdeployment.app.request import fakeRequest, restoreRequest
 
 try:
     from plone.resource.file import FilesystemFile
@@ -166,7 +167,7 @@ class StaticDeploymentUtils(object):
             raise e
 
 
-    def _apply_transforms(self, html):
+    def _apply_transforms(self, html, filename=None):
         """
         Apply transforms to output html.
         """
@@ -175,7 +176,14 @@ class StaticDeploymentUtils(object):
 
         for t_name, t in transformations:
             log.debug('Processing %s transformation' % t_name)
-            html = t(html)
+            try:
+                html = t(html)
+            except:
+                if filename is None:
+                    filename = ''
+                log.error('error processing %s transformation(%s)\n%s' % (
+                    t_name, filename, traceback.format_exc()
+                    ))
         return html
 
 
@@ -214,7 +222,12 @@ class StaticDeploymentUtils(object):
         for t_name, t in transformations:
             log.debug('Processing %s image transformation for %s' % (t_name,
                 filename))
-            filename, image = t(filename, image)
+            try:
+                filename, image = t(filename, image)
+            except:
+                log.error('error in %s image-transformation(%s)\n%s' % (
+                    t_name, filename, traceback.format_exc()
+                    ))
         return filename, image
 
 
@@ -306,6 +319,35 @@ class StaticDeploymentUtils(object):
                 # call it
                 step()
 
+    def deploy_object(self, obj, context, request, section):
+        """
+        run a deploy just on one object
+        """
+        # get content for Anonymous users, not authenticated
+        noSecurityManager()
+        # assigning values
+        self.context = context
+        self.request = request
+        self.section = section
+
+        self._read_config(section)
+        self._apply_request_modifications()
+
+        # we want only objects available for anonyous users 
+        if not self._available_for_anonymous(obj):
+            return
+        # check if object is a normal page
+        is_page = obj.meta_type in self.page_types
+        try:
+            self._deploy_content(obj, is_page=is_page)
+        except:
+            log.error("error exporting object: %s\n%s" % (
+                '/'.join(obj.getPhysicalPath()),
+                traceback.format_exc())
+            )
+
+        ## find and run additional deployment steps
+        self._applay_extra_deployment_steps(None)
 
     def deploy(self, context, request, section, last_triggered=None):
         """
@@ -462,15 +504,16 @@ class StaticDeploymentUtils(object):
 
 
     @reset_request
-    def _render_obj(self, obj):
+    def _render_obj(self, obj, new_req=None):
         """
         Render object to string.
         """
         if isinstance(obj, basestring):
             return obj
+        if new_req is None:
+            new_req = self.request
         ## 'plone.global_sections' viewlet uses request['URL'] highlight
         ## selected tab, so it must be overridden but only for a while
-        initial_url = self.request['URL']
         try:
             obj_url = obj.absolute_url()
         except AttributeError:
@@ -478,15 +521,6 @@ class StaticDeploymentUtils(object):
                 obj_url = obj.context.absolute_url()
             except AttributeError:
                 obj_url = None
-
-        if obj_url:
-            self.request['URL'] = obj_url
-
-        ## breadcrumb implementation in quills uses 'PARENTS', so it must
-        ## be overriden but ony for a while
-        initial_parents = self.request['PARENTS']
-        if hasattr(obj, 'aq_chain'):
-            self.request['PARENTS'] = obj.aq_chain
 
         try:
             if IResource.providedBy(obj):
@@ -523,7 +557,7 @@ class StaticDeploymentUtils(object):
 
             if PLONE_RESOURCE_INSTALLED and isinstance(obj, FilesystemFile):
                 if not obj.request:
-                    obj.request = self.request
+                    obj.request = new_req
                     return obj().read()
 
             if PLONE_APP_BLOB_INSTALLED and IBlobWrapper.providedBy(obj):
@@ -536,9 +570,9 @@ class StaticDeploymentUtils(object):
                     return self._render_obj(def_page)
 
                 view_name = obj.getLayout()
-                view = queryMultiAdapter((obj, self.request), name=view_name)
+                view = queryMultiAdapter((obj, new_req), name=view_name)
                 if view_name == 'language-switcher':
-                    lang = self.request.get('LANGUAGE')
+                    lang = new_req.get('LANGUAGE')
                     def_page = getattr(obj, lang, None)
                     if def_page:
                         return self._render_obj(def_page)
@@ -557,8 +591,6 @@ class StaticDeploymentUtils(object):
                             return view()
                         except Exception, error:
                             log.warning("Unable to render view: '%s'! Error occurred: %s" % (view, error))
-                            pass
-
                 else:
                     try:
                         return obj()
@@ -566,12 +598,7 @@ class StaticDeploymentUtils(object):
                         pass
 
         finally:
-            ## back to initial url
-            if obj_url:
-                self.request['URL'] = initial_url
-
-            ## back to initial parents
-            self.request['PARENTS'] = initial_parents
+            pass
 
         log.warning("Not recognized object '%s'!" % repr(obj))
         return None
@@ -675,6 +702,11 @@ class StaticDeploymentUtils(object):
         """
         Deploy object as page.
         """
+        try:
+            new_req, orig_req = fakeRequest(obj)
+        except AttributeError:
+            # not a valid obj to override request with
+            new_req = None
         content = self._render_obj(obj)
         if content is None:
             return
@@ -719,6 +751,8 @@ class StaticDeploymentUtils(object):
                 self._deploy_file_field(obj, field)
             else:
                 continue
+        if new_req is not None:
+            restoreRequest(orig_req, new_req)
 
 
     def _deploy_resources(self, urls, base_path):
@@ -806,7 +840,13 @@ class StaticDeploymentUtils(object):
                 else:
                     objpath = os.path.join(objpath, 'image.jpg')
 
-            content = self._render_obj(obj)
+            try:
+                content = self._render_obj(obj)
+            except AttributeError:
+                # XXX this can happen with CachedResource?
+                # can't figure out how but let's not error if so...
+                log.warning("Unable to deploy resource '%s'!" % objpath)
+                continue
             if content is None:
                 continue
 
@@ -868,7 +908,7 @@ class StaticDeploymentUtils(object):
 
         if RE_NOT_BINARY.search(filename) and not omit_transform and \
                 not filename.endswith('.js') and not filename.endswith('.css'):
-            pre_transformated_content = self._apply_transforms(content)
+            pre_transformated_content = self._apply_transforms(content, filename)
             post_transformated_content = self._apply_post_transforms(
                     pre_transformated_content, file_path=file_path)
         else:

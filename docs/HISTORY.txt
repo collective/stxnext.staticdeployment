@@ -1,7 +1,20 @@
 Changelog
 =========
 
-1.0.3 (unreleased)
+1.0.4 (unreleased)
+------------------
+
+- more diazo related fixes
+  [vangheem]
+
+- create a fake request so diazo rules can utilize path variables.
+  [vangheem]
+
+- handle image extensions correctly
+  [vangheem]
+
+
+1.0.3 (2013-03-25)
 ------------------
 
 - better unicode handling

@@ -1,12 +1,16 @@
 """
 Transformation adapters for Diazo themes
 """
+import traceback
 from plone.app.theming.transform import ThemeTransform
 from plone.app.theming.interfaces import IThemeSettings
 from plone.registry.interfaces import IRegistry
 from zope.component import queryUtility
 
 from transformations import PostTransformation
+from zope.globalrequest import getRequest
+import logging
+log = logging.getLogger(__name__)
 
 
 class ApplyDiazoThemeTransformation(PostTransformation):
@@ -22,17 +26,21 @@ class ApplyDiazoThemeTransformation(PostTransformation):
             return text
 
         context = self.context
-        req = context.REQUEST
-        # set false BASE url to omit the theme's blacklisted domains
-        req['BASE1'] = 'http://apply_diazo_theme.com'
+        req = getRequest()
         theme_transform = ThemeTransform(context, req)
         encoding = 'utf-8'
         try:
             encoded = [text.encode(encoding)]
+            # XXX make sure the content type is text/html
+            req.response.headers['Content-Type'] = req.response.headers['content-type'] = 'text/html'
             transformed_text = theme_transform.transformIterable(
                 encoded, encoding)
             if transformed_text:
                 text = transformed_text.serialize()
         except UnicodeDecodeError:
-            pass
+            if file_path is None:
+                file_path = ''
+            log.error('error processing diazo(%s)\n%s' % (
+                file_path, traceback.format_exc()
+                ))
         return text
