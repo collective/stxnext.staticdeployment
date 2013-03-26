@@ -489,7 +489,11 @@ class StaticDeploymentUtils(object):
 
             # plone.resource file system resource
             if IResourceDirectory.providedBy(context):
-                content_obj = context[view_name]
+                try:
+                    content_obj = context[view_name]
+                except:
+                    log.warning("Unable traverse to '%s'!" % fullview_name)
+                    continue
             else:
                 content_obj = context.restrictedTraverse(view_name, None)
 
