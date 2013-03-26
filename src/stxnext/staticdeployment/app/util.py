@@ -962,6 +962,9 @@ class StaticDeploymentUtils(object):
             dir_path = self.base_dir
         file_path = os.path.join(dir_path, filename)
         file_path = unquote(file_path)
+        if os.path.isfile(os.path.dirname(file_path)):
+            # in case some image resources were referenced before getting dumped
+            os.remove(os.path.dirname(file_path))
         _makedirs(os.path.dirname(file_path))
 
         try:

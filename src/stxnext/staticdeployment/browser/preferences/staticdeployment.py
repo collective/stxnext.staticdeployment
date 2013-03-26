@@ -252,6 +252,8 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
                 deployment_utils.revert_request_modifications(self.context, self.request)
                 user = self.request.get('AUTHENTICATED_USER')
                 newSecurityManager(self.request, user)
+                self.request.response.redirect('%s/@@staticdeployment-controlpanel' % (
+                    self.context.absolute_url()))
 
     def _on_save(self, data):
         """
