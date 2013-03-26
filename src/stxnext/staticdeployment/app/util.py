@@ -390,6 +390,8 @@ class StaticDeploymentUtils(object):
                          modified={'query': [modification_date, ], 'range': 'min'},
                          effectiveRange = DateTime(),
                          )
+        portal_syndication = getToolByName(self.context, 'portal_syndication')
+        site_path = '/'.join(self.context.getPhysicalPath())
         for brain in brains:
             if not brain.review_state or brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
@@ -404,6 +406,10 @@ class StaticDeploymentUtils(object):
                 is_page = brain.meta_type in self.page_types
                 try:
                     self._deploy_content(obj, is_page=is_page)
+                    if portal_syndication.isSyndicationAllowed(obj):
+                        page = '/'.join(obj.getPhysicalPath()) + '/RSS'
+                        page = page[len(site_path) + 1:]
+                        self._deploy_views([page], is_page=True)
                 except:
                     log.error("error exporting object: %s\n%s" % (
                         '/'.join(obj.getPhysicalPath()),
@@ -932,6 +938,9 @@ class StaticDeploymentUtils(object):
         Write content to file.
         """
         filename = filename.lstrip('/')
+
+        if filename.endswith('/RSS/index.html'):
+            filename = filename.replace('/RSS/index.html', '/RSS.xml')
 
         if not content:
             log.warning("File '%s' is empty." % filename)

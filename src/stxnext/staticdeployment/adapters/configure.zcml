@@ -31,6 +31,13 @@
         />
 
     <adapter
+        name="fix_rss_feed_links"
+        factory=".transformations.ChangeRSSLinksTransformation"
+        provides="..interfaces.IPostTransformation"
+        for="zope.interface.Interface"
+        />
+
+    <adapter
         name="apply_diazo_theme"
         factory=".diazo.ApplyDiazoThemeTransformation"
         provides="..interfaces.ITransformation"

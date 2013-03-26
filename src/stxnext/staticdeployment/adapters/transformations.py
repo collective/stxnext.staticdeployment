@@ -22,6 +22,8 @@ except:
 from stxnext.staticdeployment.utils import relpath
 from stxnext.staticdeployment.interfaces import (IPostTransformation,
         IStaticDeploymentUtils, ITransformation)
+from HTMLParser import HTMLParseError
+from BeautifulSoup import BeautifulSoup
 
 
 SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
@@ -62,6 +64,15 @@ class RemoveDomainTransformation(Transformation):
         text = text.replace(domain + '/', '/')
         text = text.replace(domain, '/')
         return text
+
+
+class ChangeRSSLinksTransformation(PostTransformation):
+    """
+    Changes link to image object.
+    """
+
+    def __call__(self, text, file_path=None):
+        return text.replace('/RSS"', '/RSS.xml"')
 
 
 class ChangeImageLinksTransformation(PostTransformation):
