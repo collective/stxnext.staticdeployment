@@ -4,6 +4,9 @@ Changelog
 1.0.4 (unreleased)
 ------------------
 
+- more diazo related fixes
+  [vangheem]
+
 - create a fake request so diazo rules can utilize path variables.
   [vangheem]
 
