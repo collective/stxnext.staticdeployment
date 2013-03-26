@@ -698,9 +698,18 @@ class StaticDeploymentUtils(object):
         for scalename in scalenames:
             image =  field.getScale(obj, scale=scalename)
             if image:
-                filename = image.getId()
+                if scalename is None:
+                    filename = image.filename
+                    image = image.data
+                else:
+                    filename = image.getId()
+                if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
+                    objpath = os.path.join(filename, 'image.%s' %
+                            filename.rsplit('.', 1)[-1])
+                else:
+                    objpath = os.path.join(filename, 'image.jpg')
                 dir_path = obj.absolute_url_path().lstrip('/')
-                file_path = os.path.join(dir_path, filename)
+                file_path = os.path.join(dir_path, filename, 'image.jpg')
                 content = self._render_obj(image)
                 if content:
                     file_path, content = self._apply_image_transforms(file_path, content)
