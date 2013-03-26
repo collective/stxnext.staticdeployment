@@ -826,7 +826,19 @@ class StaticDeploymentUtils(object):
                                 scalename = image_name[len(fieldname) + 1:]
                                 obj = field.getScale(parent_obj, scalename)
                                 objpath = os.path.join(objpath, 'image.jpg')
-                                continue
+                                break
+                        else:
+                            # didn't find it, just go for field name now...
+                            # could be added with archetypes.schemaextender
+                            parts = image_name.split('_')
+                            fieldname = parts[0]
+                            field = parent_obj.getField(fieldname)
+                            if len(parts) == 2:
+                                scalename = parts[1]
+                                obj = field.getScale(parent_obj, scalename)
+                                objpath = os.path.join(objpath, 'image.jpg')
+
+            add_path = True
             if not obj:
                 if '/@@images/' in objpath:
                     parent_path, image_name = objpath.split('/@@images/')
@@ -846,12 +858,24 @@ class StaticDeploymentUtils(object):
                             field = images_view.field(fieldname)
                             if field:
                                 obj = field.getScale(parent_obj, scalename)
+                            else:
+                                # need to try and get it from the uid
+                                uid, ext = fieldname.rsplit('.', 1)
+                                from plone.scale.storage import AnnotationStorage
+                                storage = AnnotationStorage(parent_obj)
+                                info = storage.get(uid)
+                                if info is not None:
+                                    obj = images_view.make(info).__of__(parent_obj)
+                                    #using the exported scale now instead
+                                    objpath = '/'.join((parent_path, fieldname))
+                                    add_path = False
                         except ComponentLookupError:
                             pass
             if not obj:
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
-            if isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
+            if isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and \
+                    'image' in obj.getBlobWrapper().getContentType() and add_path:
                 # create path to dump ATImage in original size
                 if objpath.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
                     objpath = os.path.join(objpath, 'image.%s' % objpath.rsplit('.', 1)[-1])

@@ -90,6 +90,13 @@ class ChangeImageLinksTransformation(PostTransformation):
                     continue
                 fieldname = filename.split('_', 1)[0]
                 obj = self.context.restrictedTraverse('/'.join((path, fieldname)), None)
+                if not obj:
+                    # not all fields are traversable
+                    obj = self.context.restrictedTraverse(path, None)
+                    if obj and hasattr(obj, 'getField'):
+                        field = obj.getField(fieldname)
+                        if field:
+                            obj = field.get(obj)
                 if PLONE_APP_BLOB_INSTALLED and IBlobWrapper.providedBy(obj):
                     text = text.replace(match_path, match_path + '/image.jpg')
                 if not obj:
