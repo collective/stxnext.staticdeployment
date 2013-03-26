@@ -690,35 +690,7 @@ class StaticDeploymentUtils(object):
                 content = self._render_obj(str(file_instance.data))
                 if content:
                     self._write(file_path, content)
-
-
-    def _deploy_image_field(self, obj, field):
-        """
-        Deploys normal Image field
-        """
-        sizes = field.getAvailableSizes(field)
-        scalenames = sizes.keys()
-        scalenames.append(None)
-        for scalename in scalenames:
-            image =  field.getScale(obj, scale=scalename)
-            if image:
-                if scalename is None:
-                    filename = image.filename
-                    image = image.data
-                else:
-                    filename = image.getId()
-                if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
-                    objpath = os.path.join(filename, 'image.%s' %
-                            filename.rsplit('.', 1)[-1])
-                else:
-                    objpath = os.path.join(filename, 'image.jpg')
-                dir_path = obj.absolute_url_path().lstrip('/')
-                file_path = os.path.join(dir_path, filename, 'image.jpg')
-                content = self._render_obj(image)
-                if content:
-                    file_path, content = self._apply_image_transforms(file_path, content)
-                    self._write(file_path, content)
-
+                    self.deployed_resources.append(file_path)
 
     def _deploy_file_field(self, obj, field):
         """
@@ -733,7 +705,7 @@ class StaticDeploymentUtils(object):
                 content = self._render_obj(str(file_instance.data))
                 if content:
                     self._write(file_path, content)
-
+                    self.deployed_resources.append(file_path)
 
     def _deploy_content(self, obj, is_page=True):
         """
@@ -778,19 +750,17 @@ class StaticDeploymentUtils(object):
             return
 
         for field in obj.Schema().fields():
-            if PLONE_APP_BLOB_INSTALLED and IBlobImageField.providedBy(field):
+            if (PLONE_APP_BLOB_INSTALLED and IBlobImageField.providedBy(field)) or \
+                    field.type == 'image':
                 self._deploy_blob_image_field(obj, field)
             elif PLONE_APP_BLOB_INSTALLED and IBlobField.providedBy(field):
                 self._deploy_blob_file_field(obj, field)
-            elif field.type == 'image':
-                self._deploy_image_field(obj, field)
             elif field.type == 'file' and obj.meta_type not in self.file_types:
                 self._deploy_file_field(obj, field)
             else:
                 continue
         if new_req is not None:
             restoreRequest(orig_req, new_req)
-
 
     def _deploy_resources(self, urls, base_path):
         """
