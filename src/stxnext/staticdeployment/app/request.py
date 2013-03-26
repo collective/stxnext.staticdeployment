@@ -86,6 +86,7 @@ def fakeRequest(obj, root=None, stdout=None):
     request.other['URL'] = request.other['ACTUAL_URL'] = request.other['VIRTUAL_URL'] = url
     request.other['PUBLISHED'] = obj
     request.other['BASE1'] = parent_request.get('BASE1', '')
+    request.other['SERVER_URL'] = parent_request.get('SERVER_URL', '')
 
     try:
         setRequest(request)
