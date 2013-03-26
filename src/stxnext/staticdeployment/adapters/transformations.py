@@ -90,8 +90,6 @@ class ChangeImageLinksTransformation(PostTransformation):
             obj = self.context.unrestrictedTraverse(match_path, None)
             ext = match_path.split('.')[-1].lower()
             ext = ext in ('png', 'jpg', 'gif', 'jpeg') and ext or 'jpg'
-            if 'btm-card.jpg/@@images' in match_path:
-                import pdb; pdb.set_trace()
             if obj and isinstance(obj, ATImage):
                 text = text.replace(match_path, match_path + '/image.%s' % ext)
             if hasattr(obj, 'getBlobWrapper'):
@@ -118,7 +116,6 @@ class ChangeImageLinksTransformation(PostTransformation):
                     text = text.replace(match_path, match_path + '/image.jpg')
                 if not obj:
                     if '/@@images/' in match_path:
-                        import pdb; pdb.set_trace()
                         parent_path, image_name = match_path.split('/@@images/')
                         spl_img_name = image_name.split('/')
                         if len(spl_img_name) == 1:
