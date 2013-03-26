@@ -87,6 +87,7 @@ def fakeRequest(obj, root=None, stdout=None):
     request.other['PUBLISHED'] = obj
     request.other['BASE1'] = parent_request.get('BASE1', '')
     request.other['SERVER_URL'] = parent_request.get('SERVER_URL', '')
+    request.other['SERVER_PORT'] = parent_request.get('SERVER_PORT', '')
 
     try:
         setRequest(request)
