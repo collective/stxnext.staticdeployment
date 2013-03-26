@@ -319,6 +319,35 @@ class StaticDeploymentUtils(object):
                 # call it
                 step()
 
+    def deploy_object(self, obj, context, request, section):
+        """
+        run a deploy just on one object
+        """
+        # get content for Anonymous users, not authenticated
+        noSecurityManager()
+        # assigning values
+        self.context = context
+        self.request = request
+        self.section = section
+
+        self._read_config(section)
+        self._apply_request_modifications()
+
+        # we want only objects available for anonyous users 
+        if not self._available_for_anonymous(obj):
+            return
+        # check if object is a normal page
+        is_page = obj.meta_type in self.page_types
+        try:
+            self._deploy_content(obj, is_page=is_page)
+        except:
+            log.error("error exporting object: %s\n%s" % (
+                '/'.join(obj.getPhysicalPath()),
+                traceback.format_exc())
+            )
+
+        ## find and run additional deployment steps
+        self._applay_extra_deployment_steps(None)
 
     def deploy(self, context, request, section, last_triggered=None):
         """

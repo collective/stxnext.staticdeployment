@@ -220,10 +220,21 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
             else:
                 date = None
 
+            # XXX hidden ability to only export one object from site.
+            # XXX This allows for debugging problematic objects
+            obj = self.request.get('only_object', None)
+            if obj:
+                obj = self.context.restrictedTraverse(str(obj), None)
+
             try:
                 for section in sections:
                     try:
-                        deployment_utils.deploy(self.context, self.request, section, date)
+                        # again, implementing only exporting one object
+                        if obj:
+                            log.info('only deploying object: %s' % '/'.join(obj.getPhysicalPath()))
+                            deployment_utils.deploy_object(obj, self.context, self.request, section)
+                        else:
+                            deployment_utils.deploy(self.context, self.request, section, date)
                         message = _(u'Succesfull deployment for section %s' % section)
                         messages.addStatusMessage(message, type='info')
                         self.store(datetime.now(), username, section, data['delete_previous'], data['deployment'], 1)
