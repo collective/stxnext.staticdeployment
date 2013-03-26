@@ -135,6 +135,12 @@ class ChangeImageLinksTransformation(PostTransformation):
                             new_path = new_path + '/image.jpg'
                         text = text.replace(match_path, new_path)
 
+        # XXX hack to fix issue when images
+        # are listed twice and transformed diff both times...
+        for scalename in ('large', 'preview', 'mini', 'thumb',
+                          'tile', 'icon', 'listing', 'leadimage'):
+            text = text.replace('/image.jpg/image_%s' % scalename, '/image_%s/image.jpg' % scalename)
+
         return text
 
 
