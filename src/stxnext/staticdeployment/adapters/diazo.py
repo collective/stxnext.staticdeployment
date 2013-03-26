@@ -27,12 +27,12 @@ class ApplyDiazoThemeTransformation(PostTransformation):
 
         context = self.context
         req = getRequest()
-        # XXX make sure the content type is text/html
-        req.response.headers['Content-Type'] = req.response.headers['content-type'] = 'text/html'
         theme_transform = ThemeTransform(context, req)
         encoding = 'utf-8'
         try:
             encoded = [text.encode(encoding)]
+            # XXX make sure the content type is text/html
+            req.response.headers['Content-Type'] = req.response.headers['content-type'] = 'text/html'
             transformed_text = theme_transform.transformIterable(
                 encoded, encoding)
             if transformed_text:
