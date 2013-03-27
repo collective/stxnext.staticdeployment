@@ -61,6 +61,8 @@ try:
 except:
     from zope.interface import Interface as IResourceDirectory
 
+from zope.annotation import IAnnotations
+
 
 log = logging.getLogger(__name__)
 
@@ -388,6 +390,8 @@ class StaticDeploymentUtils(object):
                          modified={'query': [modification_date, ], 'range': 'min'},
                          effectiveRange = DateTime(),
                          )
+        portal_syndication = getToolByName(self.context, 'portal_syndication')
+        site_path = '/'.join(self.context.getPhysicalPath())
         for brain in brains:
             if not brain.review_state or brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
@@ -402,6 +406,10 @@ class StaticDeploymentUtils(object):
                 is_page = brain.meta_type in self.page_types
                 try:
                     self._deploy_content(obj, is_page=is_page)
+                    if portal_syndication.isSyndicationAllowed(obj):
+                        page = '/'.join(obj.getPhysicalPath()) + '/RSS'
+                        page = page[len(site_path) + 1:]
+                        self._deploy_views([page], is_page=True)
                 except:
                     log.error("error exporting object: %s\n%s" % (
                         '/'.join(obj.getPhysicalPath()),
@@ -481,7 +489,11 @@ class StaticDeploymentUtils(object):
 
             # plone.resource file system resource
             if IResourceDirectory.providedBy(context):
-                content_obj = context[view_name]
+                try:
+                    content_obj = context[view_name]
+                except:
+                    log.warning("Unable traverse to '%s'!" % fullview_name)
+                    continue
             else:
                 content_obj = context.restrictedTraverse(view_name, None)
 
@@ -647,7 +659,23 @@ class StaticDeploymentUtils(object):
                     # add as already deployed resource to avoid
                     # redeployment in _deploy_resources
                     self.deployed_resources.append(file_path)
-
+        annotations = IAnnotations(obj)
+        plone_scales = annotations.get('plone.scale', {})
+        for key in plone_scales.keys():
+            info = plone_scales[key]
+            data = info['data']
+            mimetype = info['mimetype']
+            extension = mimetype.split('/')[-1]
+            file_path = "%s/%s.%s" % (
+                obj.absolute_url_path().lstrip('/'),
+                info['uid'],
+                extension)
+            content = data.open('r').read()
+            if content:
+                file_path, content = self._apply_image_transforms(file_path, content)
+                if file_path not in self.deployed_resources:
+                    self._write(file_path, content)
+                    self.deployed_resources.append(file_path)
 
     def _deploy_blob_file_field(self, obj, field):
         """
@@ -662,26 +690,7 @@ class StaticDeploymentUtils(object):
                 content = self._render_obj(str(file_instance.data))
                 if content:
                     self._write(file_path, content)
-
-
-    def _deploy_image_field(self, obj, field):
-        """
-        Deploys normal Image field
-        """
-        sizes = field.getAvailableSizes(field)
-        scalenames = sizes.keys()
-        scalenames.append(None)
-        for scalename in scalenames:
-            image =  field.getScale(obj, scale=scalename)
-            if image:
-                filename = image.getId()
-                dir_path = obj.absolute_url_path().lstrip('/')
-                file_path = os.path.join(dir_path, filename)
-                content = self._render_obj(image)
-                if content:
-                    file_path, content = self._apply_image_transforms(file_path, content)
-                    self._write(file_path, content)
-
+                    self.deployed_resources.append(file_path)
 
     def _deploy_file_field(self, obj, field):
         """
@@ -696,7 +705,7 @@ class StaticDeploymentUtils(object):
                 content = self._render_obj(str(file_instance.data))
                 if content:
                     self._write(file_path, content)
-
+                    self.deployed_resources.append(file_path)
 
     def _deploy_content(self, obj, is_page=True):
         """
@@ -741,19 +750,17 @@ class StaticDeploymentUtils(object):
             return
 
         for field in obj.Schema().fields():
-            if PLONE_APP_BLOB_INSTALLED and IBlobImageField.providedBy(field):
+            if (PLONE_APP_BLOB_INSTALLED and IBlobImageField.providedBy(field)) or \
+                    field.type == 'image':
                 self._deploy_blob_image_field(obj, field)
             elif PLONE_APP_BLOB_INSTALLED and IBlobField.providedBy(field):
                 self._deploy_blob_file_field(obj, field)
-            elif field.type == 'image':
-                self._deploy_image_field(obj, field)
             elif field.type == 'file' and obj.meta_type not in self.file_types:
                 self._deploy_file_field(obj, field)
             else:
                 continue
         if new_req is not None:
             restoreRequest(orig_req, new_req)
-
 
     def _deploy_resources(self, urls, base_path):
         """
@@ -808,7 +815,19 @@ class StaticDeploymentUtils(object):
                                 scalename = image_name[len(fieldname) + 1:]
                                 obj = field.getScale(parent_obj, scalename)
                                 objpath = os.path.join(objpath, 'image.jpg')
-                                continue
+                                break
+                        else:
+                            # didn't find it, just go for field name now...
+                            # could be added with archetypes.schemaextender
+                            parts = image_name.split('_')
+                            fieldname = parts[0]
+                            field = parent_obj.getField(fieldname)
+                            if len(parts) == 2:
+                                scalename = parts[1]
+                                obj = field.getScale(parent_obj, scalename)
+                                objpath = os.path.join(objpath, 'image.jpg')
+
+            add_path = True
             if not obj:
                 if '/@@images/' in objpath:
                     parent_path, image_name = objpath.split('/@@images/')
@@ -828,12 +847,24 @@ class StaticDeploymentUtils(object):
                             field = images_view.field(fieldname)
                             if field:
                                 obj = field.getScale(parent_obj, scalename)
+                            else:
+                                # need to try and get it from the uid
+                                uid, ext = fieldname.rsplit('.', 1)
+                                from plone.scale.storage import AnnotationStorage
+                                storage = AnnotationStorage(parent_obj)
+                                info = storage.get(uid)
+                                if info is not None:
+                                    obj = images_view.make(info).__of__(parent_obj)
+                                    #using the exported scale now instead
+                                    objpath = '/'.join((parent_path, fieldname))
+                                    add_path = False
                         except ComponentLookupError:
                             pass
             if not obj:
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
-            if isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
+            if isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and \
+                    'image' in obj.getBlobWrapper().getContentType() and add_path:
                 # create path to dump ATImage in original size
                 if objpath.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
                     objpath = os.path.join(objpath, 'image.%s' % objpath.rsplit('.', 1)[-1])
@@ -891,6 +922,9 @@ class StaticDeploymentUtils(object):
         """
         filename = filename.lstrip('/')
 
+        if filename.endswith('/RSS/index.html'):
+            filename = filename.replace('/RSS/index.html', '/RSS.xml')
+
         if not content:
             log.warning("File '%s' is empty." % filename)
 
@@ -898,6 +932,9 @@ class StaticDeploymentUtils(object):
             dir_path = self.base_dir
         file_path = os.path.join(dir_path, filename)
         file_path = unquote(file_path)
+        if os.path.isfile(os.path.dirname(file_path)):
+            # in case some image resources were referenced before getting dumped
+            os.remove(os.path.dirname(file_path))
         _makedirs(os.path.dirname(file_path))
 
         try:

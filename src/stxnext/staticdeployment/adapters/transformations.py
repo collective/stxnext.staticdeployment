@@ -22,6 +22,9 @@ except:
 from stxnext.staticdeployment.utils import relpath
 from stxnext.staticdeployment.interfaces import (IPostTransformation,
         IStaticDeploymentUtils, ITransformation)
+from HTMLParser import HTMLParseError
+from BeautifulSoup import BeautifulSoup
+from plone.app.imaging.interfaces import IImageScaling
 
 
 SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
@@ -64,6 +67,15 @@ class RemoveDomainTransformation(Transformation):
         return text
 
 
+class ChangeRSSLinksTransformation(PostTransformation):
+    """
+    Changes link to image object.
+    """
+
+    def __call__(self, text, file_path=None):
+        return text.replace('/RSS"', '/RSS.xml"')
+
+
 class ChangeImageLinksTransformation(PostTransformation):
     """
     Changes link to image object.
@@ -90,6 +102,16 @@ class ChangeImageLinksTransformation(PostTransformation):
                     continue
                 fieldname = filename.split('_', 1)[0]
                 obj = self.context.restrictedTraverse('/'.join((path, fieldname)), None)
+                if not obj:
+                    # not all fields are traversable
+                    obj = self.context.restrictedTraverse(path, None)
+                    if IImageScaling.providedBy(obj):
+                        # we can't do anything with the @@images view yet here...
+                        obj = None
+                    if obj and hasattr(obj, 'getField'):
+                        field = obj.getField(fieldname)
+                        if field:
+                            obj = field.get(obj)
                 if PLONE_APP_BLOB_INSTALLED and IBlobWrapper.providedBy(obj):
                     text = text.replace(match_path, match_path + '/image.jpg')
                 if not obj:
@@ -98,13 +120,26 @@ class ChangeImageLinksTransformation(PostTransformation):
                         spl_img_name = image_name.split('/')
                         if len(spl_img_name) == 1:
                             # no scalename in path
-                            fieldname = spl_img_name
-                            new_path = '/'.join((parent_path, 'image.jpg'))
+                            uid = spl_img_name[0]
+                            if '-' in uid:
+                                # seems to be actual uid for a custom scale here...
+                                # it should written out as [uid].[ext]
+                                new_path = '/'.join((parent_path, uid))
+                            else:
+                                # just use original if we can't figure this out...
+                                new_path = '/'.join((parent_path, 'image.%s' % ext))
                         else:
                             # scalename in path 
                             fieldname, scalename = spl_img_name
                             new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
-                        text = text.replace(match_path, new_path + '/image.jpg')
+                            new_path = new_path + '/image.jpg'
+                        text = text.replace(match_path, new_path)
+
+        # XXX hack to fix issue when images
+        # are listed twice and transformed diff both times...
+        for scalename in ('large', 'preview', 'mini', 'thumb',
+                          'tile', 'icon', 'listing', 'leadimage'):
+            text = text.replace('/image.jpg/image_%s' % scalename, '/image_%s/image.jpg' % scalename)
 
         return text
 
