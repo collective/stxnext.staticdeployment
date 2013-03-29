@@ -10,6 +10,7 @@ from urlparse import urlparse, urlunparse, urlsplit, urlunsplit
 from OFS.Image import File
 from Products.ATContentTypes.content.image import ATImage
 from Products.CMFCore.FSObject import FSObject
+from Products.Archetypes.Field import Image as ArchetypesImage
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -123,11 +124,13 @@ class ChangeImageLinksTransformation(PostTransformation):
             obj = self.context.unrestrictedTraverse(match_path, None)
             ext = match_path.split('.')[-1].lower()
             ext = ext in ('png', 'jpg', 'gif', 'jpeg') and ext or 'jpg'
-            if obj and isinstance(obj, ATImage):
+            if obj and isinstance(obj, ATImage) or (
+                hasattr(obj, 'getBlobWrapper') and \
+                    'image' in obj.getBlobWrapper().getContentType()):
                 link.set(url + '/image.%s' % ext)
-            if hasattr(obj, 'getBlobWrapper'):
-                if 'image' in obj.getBlobWrapper().getContentType():
-                    link.set(url + '/image.%s' % ext)
+            elif obj and isinstance(obj, ArchetypesImage):
+                # it's a scale, always use image.jpg extension
+                link.set(url + '/image.jpg')
             if not obj:
                 try:
                     path, filename = match_path.rsplit('/', 1)
