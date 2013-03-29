@@ -22,16 +22,21 @@ except:
 from stxnext.staticdeployment.utils import relpath
 from stxnext.staticdeployment.interfaces import (IPostTransformation,
         IStaticDeploymentUtils, ITransformation)
-from HTMLParser import HTMLParseError
-from BeautifulSoup import BeautifulSoup
 from plone.app.imaging.interfaces import IImageScaling
+from lxml import etree
+from lxml.html import tostring, fromstring
 
-
-SRC_PATTERN = re.compile(r"<\s*(?:img|a)\s+[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 FILE_PATTERN = re.compile(r"<\s*(?:a)\s+[^>]*(?:href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 LINK_PATTERN = re.compile(r"<\s*[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 CSS_LINK_PATTERN = re.compile(r"@import\s*(?:url)\s*\(\s*(.*)[\)]", re.IGNORECASE)
 BASE_PATTERN = re.compile(r"<\s*base\s+[^>]*href\s*=\s*[\"\']([^\"\'>]+)[\"\']", re.IGNORECASE)
+
+
+def getDom(txt):
+    try:
+        return fromstring(txt)
+    except (TypeError, etree.ParseError):
+        return None
 
 
 class Transformation(object):
@@ -73,7 +78,31 @@ class ChangeRSSLinksTransformation(PostTransformation):
     """
 
     def __call__(self, text, file_path=None):
-        return text.replace('/RSS"', '/RSS.xml"')
+        dom = getDom(text)
+        if not dom:
+            return text
+        for link in dom.cssselect('a[href]'):
+            link.attrib['href'] = link.attrib['href'].replace('/RSS', '/RSS.xml')
+        return tostring(dom)
+
+
+class LinkElement(object):
+    def __init__(self, link):
+        self.link = link
+
+    def set(self, val):
+        if self.link.tag == 'a':
+            self.link.attrib['href'] = val
+        elif self.link.tag == 'img':
+            self.link.attrib['src'] = val
+
+    @property
+    def val(self):
+        if self.link.tag == 'a':
+            return self.link.attrib.get('href', '')
+        elif self.link.tag == 'img':
+            return self.link.attrib.get('src', '')
+        return ''
 
 
 class ChangeImageLinksTransformation(PostTransformation):
@@ -82,19 +111,23 @@ class ChangeImageLinksTransformation(PostTransformation):
     """
 
     def __call__(self, text, file_path=None):
-        matches = SRC_PATTERN.findall(text)
-        for match in set(matches):
-            match_path = match.strip('"').strip("'").replace('../', '').replace('%20', ' ').lstrip('/')
+        dom = getDom(text)
+        if not dom:
+            return text
+        for link in dom.cssselect('a[href],img[src]'):
+            link = LinkElement(link)
+            match_path = link.val.strip('"').strip("'").replace(
+                '../', '').replace('%20', ' ').lstrip('/')
             if type(match_path) == unicode:
                 match_path = match_path.encode('utf-8')
             obj = self.context.unrestrictedTraverse(match_path, None)
             ext = match_path.split('.')[-1].lower()
             ext = ext in ('png', 'jpg', 'gif', 'jpeg') and ext or 'jpg'
             if obj and isinstance(obj, ATImage):
-                text = text.replace(match_path, match_path + '/image.%s' % ext)
+                link.set(match_path + '/image.%s' % ext)
             if hasattr(obj, 'getBlobWrapper'):
                 if 'image' in obj.getBlobWrapper().getContentType():
-                    text = text.replace(match_path, match_path + '/image.%s' % ext)
+                    link.set(match_path + '/image.%s' % ext)
             if not obj:
                 try:
                     path, filename = match_path.rsplit('/', 1)
@@ -113,7 +146,7 @@ class ChangeImageLinksTransformation(PostTransformation):
                         if field:
                             obj = field.get(obj)
                 if PLONE_APP_BLOB_INSTALLED and IBlobWrapper.providedBy(obj):
-                    text = text.replace(match_path, match_path + '/image.jpg')
+                    link.set(match_path + '/image.jpg')
                 if not obj:
                     if '/@@images/' in match_path:
                         parent_path, image_name = match_path.split('/@@images/')
@@ -133,15 +166,9 @@ class ChangeImageLinksTransformation(PostTransformation):
                             fieldname, scalename = spl_img_name
                             new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
                             new_path = new_path + '/image.jpg'
-                        text = text.replace(match_path, new_path)
+                        link.set(new_path)
 
-        # XXX hack to fix issue when images
-        # are listed twice and transformed diff both times...
-        for scalename in ('large', 'preview', 'mini', 'thumb',
-                          'tile', 'icon', 'listing', 'leadimage'):
-            text = text.replace('/image.jpg/image_%s' % scalename, '/image_%s/image.jpg' % scalename)
-
-        return text
+        return tostring(dom)
 
 
 class ChangeFileLinksTransformation(PostTransformation):

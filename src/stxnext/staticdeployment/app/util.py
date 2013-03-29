@@ -24,7 +24,8 @@ from OFS.Image import Pdata, File, Image as OFSImage
 
 try:
     from plone.app.blob.content import ATBlob
-    from plone.app.blob.interfaces import IBlobImageField, IBlobField, IBlobWrapper
+    from plone.app.blob.interfaces import (
+        IBlobImageField, IBlobField, IBlobWrapper)
     PLONE_APP_BLOB_INSTALLED = True
 except:
     PLONE_APP_BLOB_INSTALLED = False
@@ -43,10 +44,13 @@ from Products.Five import BrowserView
 from Products.PythonScripts.PythonScript import PythonScript
 from Products.statusmessages.interfaces import IStatusMessage
 
-from stxnext.staticdeployment.browser.preferences.staticdeployment import IStaticDeployment
-from stxnext.staticdeployment.interfaces import ITransformation, IDeploymentStep, IExtraDeploymentCondition, \
-    IPostTransformation, IImageTransformation
-from stxnext.staticdeployment.utils import ConfigParser, get_config_path, reset_request
+from stxnext.staticdeployment.browser.preferences.staticdeployment import (
+        IStaticDeployment)
+from stxnext.staticdeployment.interfaces import (
+        ITransformation, IDeploymentStep, IExtraDeploymentCondition,
+        IPostTransformation, IImageTransformation)
+from stxnext.staticdeployment.utils import (
+        ConfigParser, get_config_path, reset_request)
 
 from stxnext.staticdeployment.app.request import fakeRequest, restoreRequest
 
@@ -106,7 +110,7 @@ class StaticDeploymentUtils(object):
         self.request.set(request_varname, self.defaultskin_name)
         self.request.method = 'GET'
         self.request.set('PUBLISHED', None)
-        
+
         self.base_dir = os.path.normpath(self.deployment_directory)
         self.deployed_resources = []
 
@@ -140,11 +144,16 @@ class StaticDeploymentUtils(object):
         # list-like params
         self.page_types = self.config.get_as_list('page-types', section=section)
         self.file_types = self.config.get_as_list('file-types', section=section)
-        self.skinstool_files = self.config.get_as_list('skinstool-files', section=section)
-        self.additional_files = self.config.get_as_list('additional-files', section=section)
-        self.additional_pages = self.config.get_as_list('additional-pages', section=section)
-        self.deployment_steps = self.config.get_as_list('deployment-steps', section=section)
-        self.additional_directories = self.config.get_as_list('additional-directories', section=section)
+        self.skinstool_files = self.config.get_as_list('skinstool-files',
+            section=section)
+        self.additional_files = self.config.get_as_list('additional-files',
+            section=section)
+        self.additional_pages = self.config.get_as_list('additional-pages',
+            section=section)
+        self.deployment_steps = self.config.get_as_list('deployment-steps',
+            section=section)
+        self.additional_directories = self.config.get_as_list(
+            'additional-directories', section=section)
         # params with default values
         # boolean params
         self.relative_links = self.config.getboolean(section,
@@ -155,14 +164,18 @@ class StaticDeploymentUtils(object):
         self.deploy_registry_files = self.config.getboolean(section,
                 'deploy-registry-files', True)
         # list param
-        self.deployable_review_states = self.config.get_as_list('deployable-review-states', section=section)
+        self.deployable_review_states = self.config.get_as_list(
+                'deployable-review-states', section=section)
         if not self.deployable_review_states:
             self.deployable_review_states = ['published']
         # required params
         try:
-            self.deployment_directory = self.config.get(section, 'deployment-directory').strip()
-            self.layer_interface = self.config.get(section, 'layer-interface').strip()
-            self.defaultskin_name = self.config.get(section, 'defaultskin-name').strip()
+            self.deployment_directory = self.config.get(
+                section, 'deployment-directory').strip()
+            self.layer_interface = self.config.get(
+                section, 'layer-interface').strip()
+            self.defaultskin_name = self.config.get(
+                    section, 'defaultskin-name').strip()
         except NoOptionError, e:
             messages = IStatusMessage(self.request)
             messages.addStatusMessage(_(e.message), type='error')
@@ -393,7 +406,8 @@ class StaticDeploymentUtils(object):
         portal_syndication = getToolByName(self.context, 'portal_syndication')
         site_path = '/'.join(self.context.getPhysicalPath())
         for brain in brains:
-            if not brain.review_state or brain.review_state in self.deployable_review_states:
+            if not brain.review_state or \
+                    brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
                 # we want only objects available for anonyous users 
                 if not self._available_for_anonymous(obj):
@@ -427,15 +441,18 @@ class StaticDeploymentUtils(object):
         """
         Deploy registered resources.
         """
-        registry_view = getMultiAdapter((self.context, self.request), name='resourceregistries_%s_view' % resource_name)
+        registry_view = getMultiAdapter((self.context, self.request),
+                name='resourceregistries_%s_view' % resource_name)
         registry = registry_view.registry()
         resources = getattr(registry_view, resource_type)()
         for resource in resources:
             filename = urlparse(resource['src'])[2]
             try:
-                content = registry.getResourceContent(os.path.basename(filename), self.context)
+                content = registry.getResourceContent(os.path.basename(filename),
+                    self.context)
             except TypeError:
-                log.exception("File '%s' not found when deploying '%s'!" % (filename, registry_type))
+                log.exception("File '%s' not found when deploying '%s'!" % (
+                    filename, registry_type))
                 continue
             # so html isn't added...
             self._write(filename, content, omit_transform=True)
@@ -541,7 +558,8 @@ class StaticDeploymentUtils(object):
                     result = f.read()
                     f.close()
                 except IOError:
-                    log.error("Couldn't open '%s' file with resource" % obj.context.path)
+                    log.error("Couldn't open '%s' file with resource" % (
+                        obj.context.path))
                     return None
 
                 return result
@@ -564,7 +582,8 @@ class StaticDeploymentUtils(object):
             except AttributeError:
                 pass
 
-            if mt in self.file_types or isinstance(obj, (ImageField, OFSImage, Pdata, File)):
+            if mt in self.file_types or isinstance(obj, 
+                    (ImageField, OFSImage, Pdata, File)):
                 return self._render_obj(obj.data)
 
             if PLONE_RESOURCE_INSTALLED and isinstance(obj, FilesystemFile):
@@ -602,7 +621,9 @@ class StaticDeploymentUtils(object):
                         try:
                             return view()
                         except Exception, error:
-                            log.warning("Unable to render view: '%s'! Error occurred: %s" % (view, error))
+                            log.warning(
+                                "Unable to render view: '%s'! Error occurred: %s" % (
+                                    view, error))
                 else:
                     try:
                         return obj()
@@ -654,7 +675,8 @@ class StaticDeploymentUtils(object):
                 file_path = os.path.join(dir_path, objpath)
                 content = self._render_obj(image)
                 if content:
-                    file_path, content = self._apply_image_transforms(file_path, content)
+                    file_path, content = self._apply_image_transforms(
+                            file_path, content)
                     self._write(file_path, content)
                     # add as already deployed resource to avoid
                     # redeployment in _deploy_resources
@@ -672,7 +694,8 @@ class StaticDeploymentUtils(object):
                 extension)
             content = data.open('r').read()
             if content:
-                file_path, content = self._apply_image_transforms(file_path, content)
+                file_path, content = self._apply_image_transforms(
+                        file_path, content)
                 if file_path not in self.deployed_resources:
                     self._write(file_path, content)
                     self.deployed_resources.append(file_path)
@@ -728,10 +751,13 @@ class StaticDeploymentUtils(object):
 
         if is_page:
             filename = os.path.join(filename, 'index.html')
-        elif isinstance(obj, ATImage) or hasattr(obj, 'getBlobWrapper') and 'image' in obj.getBlobWrapper().getContentType():
+        elif isinstance(obj, ATImage) or \
+                hasattr(obj, 'getBlobWrapper') and \
+                'image' in obj.getBlobWrapper().getContentType():
             # create path to dump ATImage in original size
             if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
-                filename = os.path.join(filename, 'image.%s' % filename.rsplit('.', 1)[-1])
+                filename = os.path.join(filename, 'image.%s' % (
+                    filename.rsplit('.', 1)[-1]))
             else:
                 filename = os.path.join(filename, 'image.jpg')
             filename, content = self._apply_image_transforms(filename, content)
@@ -739,7 +765,8 @@ class StaticDeploymentUtils(object):
                 obj.getBlobWrapper().getContentType()):
             # create path like for ATImage
             if len(filename.rsplit('.', 1)) > 1:
-                filename  = os.path.join(filename, 'file.%s' % filename.rsplit('.', 1)[-1])
+                filename  = os.path.join(filename, 'file.%s' % (
+                    filename.rsplit('.', 1)[-1]))
             else:
                 filename = os.path.join(filename, 'file')
 
@@ -801,11 +828,13 @@ class StaticDeploymentUtils(object):
                 continue
             obj = self.context.unrestrictedTraverse(objpath, None)
             if objpath.rsplit('/', 1)[-1].split('.')[0] == 'image':
-                obj = self.context.restrictedTraverse(objpath.rsplit('.', 1)[0], None)
+                obj = self.context.restrictedTraverse(
+                    objpath.rsplit('.', 1)[0], None)
             if not obj:
                 obj = self.context.restrictedTraverse(unquote(objpath), None)
             if not obj:
-                parent_obj = self.context.restrictedTraverse(unquote(objpath.rsplit('/', 1)[0]), None)
+                parent_obj = self.context.restrictedTraverse(
+                        unquote(objpath.rsplit('/', 1)[0]), None)
                 if parent_obj:
                     image_name = objpath.rsplit('/', 1)[-1]
                     if hasattr(parent_obj, 'schema'):
@@ -822,7 +851,7 @@ class StaticDeploymentUtils(object):
                             parts = image_name.split('_')
                             fieldname = parts[0]
                             field = parent_obj.getField(fieldname)
-                            if len(parts) == 2:
+                            if field and len(parts) == 2:
                                 scalename = parts[1]
                                 obj = field.getScale(parent_obj, scalename)
                                 objpath = os.path.join(objpath, 'image.jpg')
@@ -831,7 +860,8 @@ class StaticDeploymentUtils(object):
             if not obj:
                 if '/@@images/' in objpath:
                     parent_path, image_name = objpath.split('/@@images/')
-                    parent_obj = self.context.unrestrictedTraverse(unquote(parent_path), None)
+                    parent_obj = self.context.unrestrictedTraverse(
+                        unquote(parent_path), None)
                     if parent_obj:
                         spl_img_name = image_name.split('/')
                         if len(spl_img_name) == 1:
@@ -841,9 +871,12 @@ class StaticDeploymentUtils(object):
                             objpath = '/'.join((parent_path, 'image.jpg'))
                         else:
                             fieldname, scalename = spl_img_name
-                            objpath = os.path.join(parent_path, '_'.join((fieldname, scalename)), 'image.jpg')
+                            objpath = os.path.join(
+                                parent_path, '_'.join((fieldname, scalename)),
+                                'image.jpg')
                         try:
-                            images_view = getMultiAdapter((parent_obj, self.request), name='images')
+                            images_view = getMultiAdapter(
+                                    (parent_obj, self.request), name='images')
                             field = images_view.field(fieldname)
                             if field:
                                 obj = field.getScale(parent_obj, scalename)
@@ -867,7 +900,8 @@ class StaticDeploymentUtils(object):
                     'image' in obj.getBlobWrapper().getContentType() and add_path:
                 # create path to dump ATImage in original size
                 if objpath.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
-                    objpath = os.path.join(objpath, 'image.%s' % objpath.rsplit('.', 1)[-1])
+                    objpath = os.path.join(objpath, 'image.%s' % (
+                        objpath.rsplit('.', 1)[-1]))
                 else:
                     objpath = os.path.join(objpath, 'image.jpg')
 
@@ -881,7 +915,8 @@ class StaticDeploymentUtils(object):
             if content is None:
                 continue
 
-            if isinstance(obj, (FSImage, OFSImage, ATImage)) or hasattr(obj, 'getBlobWrapper') and \
+            if isinstance(obj, (FSImage, OFSImage, ATImage)) or \
+                    hasattr(obj, 'getBlobWrapper') and \
                 'image' in obj.getBlobWrapper().getContentType():
                 objpath, content = self._apply_image_transforms(objpath, content)
 
@@ -900,7 +935,9 @@ class StaticDeploymentUtils(object):
             return
 
         # deploying resources only from local domain (the path don't contain external address) 
-        urls = [tag['src'] for tag in soup.findAll(['img', 'input', 'embed', 'script'], src=True) if not urlparse(tag['src'])[0]]
+        urls = [tag['src'] for tag in soup.findAll(
+            ['img', 'input', 'embed', 'script'], src=True)
+            if not urlparse(tag['src'])[0]]
         css_imports = RE_CSS_IMPORTS.findall(html)
         css_imports += RE_CSS_IMPORTS_HREF.findall(html)
         css_imports = [link for link in css_imports if not urlparse(link)[0]]
