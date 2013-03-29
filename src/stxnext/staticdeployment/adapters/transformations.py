@@ -116,18 +116,18 @@ class ChangeImageLinksTransformation(PostTransformation):
             return text
         for link in dom.cssselect('a[href],img[src]'):
             link = LinkElement(link)
-            match_path = link.val.strip('"').strip("'").replace(
-                '../', '').replace('%20', ' ').lstrip('/')
+            url = link.val.rstrip('/')
+            match_path = url.replace('%20', ' ').lstrip('/')
             if type(match_path) == unicode:
                 match_path = match_path.encode('utf-8')
             obj = self.context.unrestrictedTraverse(match_path, None)
             ext = match_path.split('.')[-1].lower()
             ext = ext in ('png', 'jpg', 'gif', 'jpeg') and ext or 'jpg'
             if obj and isinstance(obj, ATImage):
-                link.set(match_path + '/image.%s' % ext)
+                link.set(url + '/image.%s' % ext)
             if hasattr(obj, 'getBlobWrapper'):
                 if 'image' in obj.getBlobWrapper().getContentType():
-                    link.set(match_path + '/image.%s' % ext)
+                    link.set(url + '/image.%s' % ext)
             if not obj:
                 try:
                     path, filename = match_path.rsplit('/', 1)
@@ -146,7 +146,7 @@ class ChangeImageLinksTransformation(PostTransformation):
                         if field:
                             obj = field.get(obj)
                 if PLONE_APP_BLOB_INSTALLED and IBlobWrapper.providedBy(obj):
-                    link.set(match_path + '/image.jpg')
+                    link.set(url + '/image.jpg')
                 if not obj:
                     if '/@@images/' in match_path:
                         parent_path, image_name = match_path.split('/@@images/')
@@ -166,6 +166,7 @@ class ChangeImageLinksTransformation(PostTransformation):
                             fieldname, scalename = spl_img_name
                             new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
                             new_path = new_path + '/image.jpg'
+                        new_path = '/' + new_path.lstrip('/')
                         link.set(new_path)
 
         return tostring(dom)
