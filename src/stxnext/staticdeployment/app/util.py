@@ -681,6 +681,14 @@ class StaticDeploymentUtils(object):
                     # add as already deployed resource to avoid
                     # redeployment in _deploy_resources
                     self.deployed_resources.append(file_path)
+        # also deploy path to field
+        fieldpath = os.path.join('%s/%s/image.jpg' % (
+            obj.absolute_url_path().lstrip('/'),
+            field.__name__)
+        )
+        self._write(fieldpath, image) # image data should already be last non-scaled image
+        self.deployed_resources.append(fieldpath)
+
         annotations = IAnnotations(obj)
         plone_scales = annotations.get('plone.scale', {})
         for key in plone_scales.keys():
