@@ -677,7 +677,7 @@ class StaticDeploymentUtils(object):
                 if content:
                     file_path, content = self._apply_image_transforms(
                             file_path, content)
-                    self._write(file_path, content)
+                    self._write(file_path, content, omit_transform=True)
                     # add as already deployed resource to avoid
                     # redeployment in _deploy_resources
                     self.deployed_resources.append(file_path)
@@ -686,7 +686,7 @@ class StaticDeploymentUtils(object):
             obj.absolute_url_path().lstrip('/'),
             field.__name__)
         )
-        self._write(fieldpath, image) # image data should already be last non-scaled image
+        self._write(fieldpath, str(image), omit_transform=True) # image data should already be last non-scaled image
         self.deployed_resources.append(fieldpath)
 
         annotations = IAnnotations(obj)
