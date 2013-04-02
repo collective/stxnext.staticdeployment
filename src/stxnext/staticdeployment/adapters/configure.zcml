@@ -24,6 +24,13 @@
         />
 
     <adapter
+        name="fix_links"
+        factory=".transformations.LinkRewriteTransformation"
+        provides="..interfaces.IPostTransformation"
+        for="zope.interface.Interface"
+        />
+
+    <adapter
         name="make_links_relative"
         factory=".transformations.RelativeLinksPostTransformation"
         provides="..interfaces.IPostTransformation"

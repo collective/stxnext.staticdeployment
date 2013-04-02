@@ -524,7 +524,10 @@ class StaticDeploymentUtils(object):
 
             filename = fullview_name
             if is_page:
-                filename = os.path.join(filename, 'index.html')
+                if self.add_index:
+                    filename = os.path.join(filename, 'index.html')
+                else:
+                    filename = filename.rstrip('/') + '.html'
             # where to write view content (based on view path)
             path = urlparse(self.context.portal_url())[2]
             filename = '/'.join((path, filename))
@@ -541,15 +544,6 @@ class StaticDeploymentUtils(object):
             return obj
         if new_req is None:
             new_req = self.request
-        ## 'plone.global_sections' viewlet uses request['URL'] highlight
-        ## selected tab, so it must be overridden but only for a while
-        try:
-            obj_url = obj.absolute_url()
-        except AttributeError:
-            try:
-                obj_url = obj.context.absolute_url()
-            except AttributeError:
-                obj_url = None
 
         try:
             if IResource.providedBy(obj):
@@ -557,6 +551,8 @@ class StaticDeploymentUtils(object):
                     f = open(obj.context.path)
                     result = f.read()
                     f.close()
+                except AttributeError:
+                    result = obj.context.data
                 except IOError:
                     log.error("Couldn't open '%s' file with resource" % (
                         obj.context.path))
@@ -700,7 +696,11 @@ class StaticDeploymentUtils(object):
                 obj.absolute_url_path().lstrip('/'),
                 info['uid'],
                 extension)
-            content = data.open('r').read()
+            if not isinstance(data, str):
+                content = data.open('r').read()
+            else:
+                import pdb; pdb.set_trace()
+                content = data
             if content:
                 file_path, content = self._apply_image_transforms(
                         file_path, content)
@@ -758,7 +758,10 @@ class StaticDeploymentUtils(object):
                     is_page=True)
 
         if is_page:
-            filename = os.path.join(filename, 'index.html')
+            if self.add_index:
+                filename = os.path.join(filename, 'index.html')
+            else:
+                filename = filename.rstrip('/') + '.html'
         elif isinstance(obj, ATImage) or \
                 hasattr(obj, 'getBlobWrapper') and \
                 'image' in obj.getBlobWrapper().getContentType():
@@ -830,7 +833,7 @@ class StaticDeploymentUtils(object):
             if objpath_spl[0] == 'plone' and len(objpath_spl) > 1:
                 objpath = objpath_spl[1]
             # fix "../" in paths
-            objpath = os.path.normpath(objpath)
+            objpath = os.path.normpath(objpath).replace('%20', ' ')
 
             if objpath in self.deployed_resources:
                 continue
@@ -901,6 +904,7 @@ class StaticDeploymentUtils(object):
                                     add_path = False
                         except ComponentLookupError:
                             pass
+
             if not obj:
                 log.warning("Unable to deploy resource '%s'!" % objpath)
                 continue
@@ -969,6 +973,8 @@ class StaticDeploymentUtils(object):
 
         if filename.endswith('/RSS/index.html'):
             filename = filename.replace('/RSS/index.html', '/RSS.xml')
+        elif filename.endswith('/RSS.html'):
+            filename = filename.replace('/RSS.html', '/RSS.xml')
 
         if not content:
             log.warning("File '%s' is empty." % filename)
@@ -985,7 +991,9 @@ class StaticDeploymentUtils(object):
         try:
             content_file = open(file_path, "w")
         except IOError:
-            log.exception("Error trying to dump data to '%s' file!" % filename)
+            # do not log if an image url...
+            if '/image' not in filename:
+                log.exception("Error trying to dump data to '%s' file!" % filename)
             return
 
         if RE_NOT_BINARY.search(filename) and not omit_transform and \

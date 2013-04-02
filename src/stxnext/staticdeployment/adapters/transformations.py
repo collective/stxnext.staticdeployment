@@ -99,7 +99,7 @@ class LinkElement(object):
 
     @property
     def val(self):
-        if self.link.tag == 'a':
+        if self.link.tag in ('a', 'base'):
             return self.link.attrib.get('href', '')
         elif self.link.tag == 'img':
             return self.link.attrib.get('src', '')
@@ -257,3 +257,44 @@ class RelativeLinksPostTransformation(PostTransformation):
             ## This is a different domain
             return False
         return True
+
+
+class LinkRewriteTransformation(PostTransformation):
+    implements(IPostTransformation)
+
+    def __call__(self, text, file_path=None):
+        dutils = getUtility(IStaticDeploymentUtils)
+        if dutils.add_index:
+            return text
+        dom = getDom(text)
+        if not dom:
+            return text
+        #import pdb; pdb.set_trace()
+        for link in dom.cssselect('a[href],base[href]'):
+            link = LinkElement(link)
+            url = link.val
+            if not self.is_same_domain(url, file_path):
+                continue
+            if url == '/': # root of the site!
+                continue
+            url = url.rstrip('/')
+            obj = self.context.restrictedTraverse(url.lstrip('/'), None)
+            if obj and not isinstance(obj, (FSObject, File)):
+                link.set(url + '.html')
+        return tostring(dom)
+
+    @staticmethod
+    def is_same_domain(destination, source):
+        """ Checks if given urls belonges to the same domain """
+        u_dest = urlsplit(destination)
+        u_src = urlsplit(source)
+
+        _uc1 = urlunsplit(u_dest[:2] + tuple('' for i in range(3)))
+        _uc2 = urlunsplit(u_src[:2] + tuple('' for i in range(3)))
+
+        if _uc1 != _uc2:
+            ## This is a different domain
+            return False
+        return True
+
+
