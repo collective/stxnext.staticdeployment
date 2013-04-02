@@ -699,7 +699,6 @@ class StaticDeploymentUtils(object):
             if not isinstance(data, str):
                 content = data.open('r').read()
             else:
-                import pdb; pdb.set_trace()
                 content = data
             if content:
                 file_path, content = self._apply_image_transforms(
