@@ -983,7 +983,9 @@ class StaticDeploymentUtils(object):
         try:
             content_file = open(file_path, "w")
         except IOError:
-            log.exception("Error trying to dump data to '%s' file!" % filename)
+            # do not log if an image url...
+            if '/image' not in filename:
+                log.exception("Error trying to dump data to '%s' file!" % filename)
             return
 
         if RE_NOT_BINARY.search(filename) and not omit_transform and \
