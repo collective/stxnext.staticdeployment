@@ -24,19 +24,52 @@ from stxnext.staticdeployment.utils import relpath
 from stxnext.staticdeployment.interfaces import (IPostTransformation,
         IStaticDeploymentUtils, ITransformation)
 from plone.app.imaging.interfaces import IImageScaling
+from lxml.html import fromstring, tostring
 from lxml import etree
-from lxml.html import tostring, fromstring
+
 
 FILE_PATTERN = re.compile(r"<\s*(?:a)\s+[^>]*(?:href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 LINK_PATTERN = re.compile(r"<\s*[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 CSS_LINK_PATTERN = re.compile(r"@import\s*(?:url)\s*\(\s*(.*)[\)]", re.IGNORECASE)
 BASE_PATTERN = re.compile(r"<\s*base\s+[^>]*href\s*=\s*[\"\']([^\"\'>]+)[\"\']", re.IGNORECASE)
+BODY_RE = re.compile(r"<body[^>]*?>(?P<body>.*)</body>", re.DOTALL | re.IGNORECASE)
+
+
+class ModifiedDom(object):
+    """
+    A class to be able to parse the body tag while
+    leaving the rest of the document in tact
+    """
+
+    def __init__(self, txt):
+        self.txt = txt
+        self.match = BODY_RE.search(txt)
+        self.dom = None
+        if self.match:
+            group = self.match.group('body')
+            if not isinstance(group, unicode):
+                try:
+                    group = group.decode('utf8')
+                except:
+                    pass
+            self.dom = fromstring(group)
+
+    def cssselect(self, what):
+        if self.dom is None:
+            return []
+        return self.dom.cssselect(what)
+
+    def __str__(self):
+        if self.dom is None:
+            return self.txt
+        return self.txt.replace(self.match.group('body'), tostring(self.dom))
 
 
 def getDom(txt):
     try:
-        return fromstring(txt)
+        return ModifiedDom(txt)
     except (TypeError, etree.ParseError):
+        # error parsing doc
         return None
 
 
@@ -84,7 +117,7 @@ class ChangeRSSLinksTransformation(PostTransformation):
             return text
         for link in dom.cssselect('a[href]'):
             link.attrib['href'] = link.attrib['href'].replace('/RSS', '/RSS.xml')
-        return tostring(dom)
+        return str(dom)
 
 
 class LinkElement(object):
@@ -165,14 +198,14 @@ class ChangeImageLinksTransformation(PostTransformation):
                                 # just use original if we can't figure this out...
                                 new_path = '/'.join((parent_path, 'image.%s' % ext))
                         else:
-                            # scalename in path 
+                            # scalename in path
                             fieldname, scalename = spl_img_name
                             new_path = '/'.join((parent_path, '_'.join((fieldname, scalename))))
                             new_path = new_path + '/image.jpg'
                         new_path = '/' + new_path.lstrip('/')
                         link.set(new_path)
 
-        return tostring(dom)
+        return str(dom)
 
 
 class ChangeFileLinksTransformation(PostTransformation):
