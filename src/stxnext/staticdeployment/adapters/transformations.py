@@ -24,6 +24,7 @@ from stxnext.staticdeployment.utils import relpath
 from stxnext.staticdeployment.interfaces import (IPostTransformation,
         IStaticDeploymentUtils, ITransformation)
 from plone.app.imaging.interfaces import IImageScaling
+from zope.traversing.interfaces import ITraversable
 from lxml.html import fromstring, tostring
 from lxml import etree
 
@@ -154,6 +155,7 @@ class ChangeImageLinksTransformation(PostTransformation):
             match_path = url.replace('%20', ' ').lstrip('/')
             if type(match_path) == unicode:
                 match_path = match_path.encode('utf-8')
+
             obj = self.context.unrestrictedTraverse(match_path, None)
             ext = match_path.split('.')[-1].lower()
             ext = ext in ('png', 'jpg', 'gif', 'jpeg') and ext or 'jpg'
@@ -174,7 +176,8 @@ class ChangeImageLinksTransformation(PostTransformation):
                 if not obj:
                     # not all fields are traversable
                     obj = self.context.restrictedTraverse(path, None)
-                    if IImageScaling.providedBy(obj):
+                    if IImageScaling.providedBy(obj) or \
+                        ITraversable.providedBy(obj):
                         # we can't do anything with the @@images view yet here...
                         obj = None
                     if obj and hasattr(obj, 'getField'):
