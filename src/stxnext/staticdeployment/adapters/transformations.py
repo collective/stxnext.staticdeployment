@@ -11,6 +11,7 @@ from OFS.Image import File
 from Products.ATContentTypes.content.image import ATImage
 from Products.CMFCore.FSObject import FSObject
 from Products.Archetypes.Field import Image as ArchetypesImage
+from Products.CMFPlone.utils import safe_unicode
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -62,8 +63,9 @@ class ModifiedDom(object):
 
     def __str__(self):
         if self.dom is None:
-            return self.txt
-        return self.txt.replace(self.match.group('body'), tostring(self.dom))
+            return safe_unicode(self.txt, 'utf-8').encode('utf-8')
+        txt = self.txt.replace(self.match.group('body'), tostring(self.dom))
+        return safe_unicode(txt, 'utf-8').encode('utf-8')
 
 
 def getDom(txt):
@@ -118,6 +120,7 @@ class ChangeRSSLinksTransformation(PostTransformation):
             return text
         for link in dom.cssselect('a[href]'):
             link.attrib['href'] = link.attrib['href'].replace('/RSS', '/RSS.xml')
+
         return str(dom)
 
 
@@ -151,11 +154,10 @@ class ChangeImageLinksTransformation(PostTransformation):
             return text
         for link in dom.cssselect('a[href],img[src]'):
             link = LinkElement(link)
-            url = link.val.rstrip('/')
-            match_path = url.replace('%20', ' ').lstrip('/')
+            url = link.val.rstrip('/').strip()
+            match_path = url.replace('%20', ' ').lstrip('/').strip()
             if type(match_path) == unicode:
                 match_path = match_path.encode('utf-8')
-
             obj = self.context.unrestrictedTraverse(match_path, None)
             ext = match_path.split('.')[-1].lower()
             ext = ext in ('png', 'jpg', 'gif', 'jpeg') and ext or 'jpg'
