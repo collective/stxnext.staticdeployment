@@ -456,28 +456,35 @@ class StaticDeploymentUtils(object):
                 name='resourceregistries_%s_view' % resource_name)
         registry = registry_view.registry()
         resources = getattr(registry_view, resource_type)()
+        current_url = self.context.absolute_url()
         for resource in resources:
-            filename = urlparse(resource['src'])[2]
-            try:
-                content = registry.getResourceContent(os.path.basename(filename),
-                    self.context)
-            except TypeError:
-                log.exception("File '%s' not found when deploying '%s'!" % (
-                    filename, registry_type))
-                continue
-            # so html isn't added...
-            self._write(filename, content, omit_transform=True)
+            if resource['src'].startswith(current_url):
+                filename = urlparse(resource['src'])[2]
+                try:
+                    content = registry.getResourceContent(
+                        os.path.basename(filename), self.context)
+                except TypeError:
+                    log.exception("File '%s' not found when deploying '%s'!" %
+                        (filename, registry_type))
+                    continue
+                # so html isn't added...
+                self._write(filename, content, omit_transform=True)
+            else:
+                log.info('Resource %s ignored, because it is external' %
+                    resource['src'])
 
 
     def _deploy_skinstool_files(self, files):
         """
-        Deploy files from portal_skins but not registered in portal_css or portal_js.
+        Deploy files from portal_skins but not registered in portal_css or
+        portal_js.
         """
         skins_tool = getToolByName(self.context, 'portal_skins')
         for fs_file_path in files:
             fs_file = skins_tool.getSkinByPath(fs_file_path)
             if not fs_file:
-                log.warning("File '%s' not found in portal_skins!" % fs_file_path)
+                log.warning("File '%s' not found in portal_skins!" %
+                    fs_file_path)
                 continue
 
             filename = fs_file_path
