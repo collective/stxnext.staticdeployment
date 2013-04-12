@@ -445,6 +445,7 @@ class StaticDeploymentUtils(object):
         # update last triggered date info
         settings = IStaticDeployment(self.context)
         settings.last_triggered = unicode(DateTime().strftime('%Y/%m/%d %H:%M:%S'))
+        log.info('Static deployment completed')
 
 
     def _deploy_registry_files(self, registry_type, resource_name, resource_type):
