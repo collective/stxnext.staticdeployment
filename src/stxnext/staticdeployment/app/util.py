@@ -283,7 +283,7 @@ class StaticDeploymentUtils(object):
         initial_debugmode = (css_tool.getDebugMode(), js_tool.getDebugMode(),
                 kss_tool.getDebugMode())
         #if DebugMode was enabled, disable it
-        if initial_debugmode[0]: css_tool.setDebugMode(True)
+        if initial_debugmode[0]: css_tool.setDebugMode(False)
         if initial_debugmode[1]: js_tool.setDebugMode(False)
         if initial_debugmode[2]: kss_tool.setDebugMode(False)
         return initial_debugmode
@@ -691,7 +691,7 @@ class StaticDeploymentUtils(object):
                 if content:
                     file_path, content = self._apply_image_transforms(
                             file_path, content)
-                    self._write(file_path, content, omNotit_transform=True)
+                    self._write(file_path, content, omit_transform=True)
                     # add as already deployed resource to avoid
                     # redeployment in _deploy_resources
                     self.deployed_resources.append(file_path)
@@ -724,7 +724,7 @@ class StaticDeploymentUtils(object):
                 if content:
                     file_path, content = self._apply_image_transforms(
                             file_path, content)
-                    self._write(file_path, content, omNotit_transform=True)
+                    self._write(file_path, content, omit_transform=True)
                     # add as already deployed resource to avoid
                     # redeployment in _deploy_resources
                     self.deployed_resources.append(file_path)
