@@ -12,10 +12,13 @@ from urlparse import urlsplit, urlparse
 
 from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
 from zope.component.interfaces import ComponentLookupError
-try:
-    from zope.app.publisher.interfaces import IResource
-except ImportError:
-    from zope.component.interfaces import IResource
+
+from zope.browserresource.interfaces import IResource
+
+# try:
+#     from zope.app.publisher.interfaces import IResource
+# except ImportError:
+#     from zope.component.interfaces import IResource
 from zope.contentprovider.interfaces import ContentProviderLookupError
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -362,7 +365,7 @@ class StaticDeploymentUtils(object):
         if not self._available_for_anonymous(obj):
             return
         # check if object is a normal page
-        is_page = obj.meta_type in self.page_types
+        is_page = obj.portal_type in self.page_types
         try:
             self._deploy_content(obj, is_page=is_page)
         except:
@@ -409,7 +412,7 @@ class StaticDeploymentUtils(object):
 
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
-        brains = catalog(meta_type=self.page_types + self.file_types,
+        brains = catalog(portal_type=self.page_types + self.file_types,
                          modified={'query': [modification_date, ], 'range': 'min'},
                          effectiveRange = DateTime(),
                          )
@@ -427,7 +430,7 @@ class StaticDeploymentUtils(object):
                         modification_date):
                     continue
                 # check if object is a normal page
-                is_page = brain.meta_type in self.page_types
+                is_page = brain.portal_type in self.page_types
                 try:
                     self._deploy_content(obj, is_page=is_page)
                     if portal_syndication.isSyndicationAllowed(obj):
@@ -590,7 +593,7 @@ class StaticDeploymentUtils(object):
 
             mt = None
             try:
-                mt = obj.aq_base.meta_type
+                mt = obj.aq_base.portal_type
             except AttributeError:
                 pass
 
@@ -872,7 +875,7 @@ class StaticDeploymentUtils(object):
                     self._deploy_blob_image_field(obj, field)
                 elif PLONE_APP_BLOB_INSTALLED and IBlobField.providedBy(field):
                     self._deploy_blob_file_field(obj, field)
-                elif field.type == 'file' and obj.meta_type not in self.file_types:
+                elif field.type == 'file' and obj.portal_type not in self.file_types:
                     self._deploy_file_field(obj, field)
                 else:
                     continue
