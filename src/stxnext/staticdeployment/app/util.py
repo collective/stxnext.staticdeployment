@@ -33,8 +33,6 @@ except:
 
 try:
     from plone.namedfile.interfaces import INamed
-    from plone.namedfile.interfaces import IFile
-    from plone.namedfile.interfaces import IImage
     from plone.namedfile.interfaces import INamedImageField
     from plone.namedfile.interfaces import INamedFileField
     PLONE_NAMEDFILE_INSTALLED = True
