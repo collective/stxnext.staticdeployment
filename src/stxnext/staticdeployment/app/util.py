@@ -39,6 +39,14 @@ try:
 except:
     PLONE_NAMEDFILE_INSTALLED = False
 
+
+try:
+    from plone.dexterity.interfaces import IDexterityContent
+    DEXTERITY_INSTALLED = True
+except:
+    DEXTERITY_INSTALLED = False
+
+
 from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
 from Products.Archetypes.interfaces import IBaseObject
@@ -52,8 +60,6 @@ from Products.CMFPlone.Portal import PloneSite
 from Products.Five import BrowserView
 from Products.PythonScripts.PythonScript import PythonScript
 from Products.statusmessages.interfaces import IStatusMessage
-from plone.dexterity.interfaces import IDexterityContainer
-from plone.dexterity.interfaces import IDexterityItem
 
 from stxnext.staticdeployment.browser.preferences.staticdeployment import (
         IStaticDeployment)
@@ -311,8 +317,7 @@ class StaticDeploymentUtils(object):
         # is object and its parents are available for anonymous?
         for subobj in chain:
             if IBaseObject.providedBy(subobj) or isinstance(subobj, PloneSite) or \
-                IDexterityItem.providedBy(subobj) or \
-                    IDexterityContainer.providedBy(subobj):
+                DEXTERITY_INSTALLED and IDexterityContent.providedBy(subobj):
                 if not 'Anonymous' in rolesForPermissionOn('View', subobj):
                     return False
         return True
@@ -610,8 +615,7 @@ class StaticDeploymentUtils(object):
                 return obj.data
 
             if IBaseObject.providedBy(obj) or isinstance(obj, PloneSite) or \
-                IDexterityContainer.providedBy(obj) or \
-                    IDexterityItem.providedBy(obj):
+                DEXTERITY_INSTALLED and IDexterityContent.providedBy(obj):
                 default_page_helper = getMultiAdapter((obj, self.request),
                         name='default_page')
                 def_page_id = default_page_helper.getDefaultPage()
@@ -841,8 +845,7 @@ class StaticDeploymentUtils(object):
             return
 
         # For Dexterity objects
-        if IDexterityContainer.providedBy(obj) or \
-            IDexterityItem.providedBy(obj):
+        if IDexterityContent.providedBy(obj):
             from plone.dexterity.interfaces import IDexterityFTI
             from zope.component import getUtility
             from zope.schema import getFieldsInOrder
@@ -969,8 +972,7 @@ class StaticDeploymentUtils(object):
                         try:
                             images_view = getMultiAdapter(
                                     (parent_obj, self.request), name='images')
-                            if IDexterityContainer.providedBy(parent_obj) or \
-                                IDexterityItem.providedBy(parent_obj):
+                            if DEXTERITY_INSTALLED and IDexterityContent.providedBy(parent_obj):
                                 obj = images_view.publishTraverse(self.request, image_name).data
                                 objpath = '/'.join((parent_path, fieldname))
                             else:
