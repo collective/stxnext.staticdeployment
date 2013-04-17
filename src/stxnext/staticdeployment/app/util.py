@@ -21,6 +21,7 @@ from zope.contentprovider.interfaces import ContentProviderLookupError
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.publisher.browser import applySkin
+from zope.publisher.browser import BrowserView
 from OFS.Image import Pdata, File, Image as OFSImage
 
 try:
@@ -57,7 +58,6 @@ from Products.CMFCore.FSPageTemplate import FSPageTemplate
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone import PloneMessageFactory as _
 from Products.CMFPlone.Portal import PloneSite
-from Products.Five import BrowserView
 from Products.PythonScripts.PythonScript import PythonScript
 from Products.statusmessages.interfaces import IStatusMessage
 
