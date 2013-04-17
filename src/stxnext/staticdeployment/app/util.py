@@ -9,8 +9,8 @@ from DateTime import DateTime
 from urllib import unquote
 from HTMLParser import HTMLParseError
 from urlparse import urlsplit, urlparse
-
 from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
+from zope.component import queryAdapter
 from zope.component.interfaces import ComponentLookupError
 
 try:
@@ -339,14 +339,18 @@ class StaticDeploymentUtils(object):
         """
         Applays extra deployment steps
         """
-        steps = getAdapters((self.context,), IDeploymentStep)
-        for step_name, step in steps:
-            if step_name in self.deployment_steps:
+        for step_name in self.deployment_steps:
+            step = queryAdapter(self.context,
+                interface=IDeploymentStep,
+                name=step_name)
+            if step is not None:
                 # update step's vars
                 step.update(self, modification_date)
                 log.debug('Calling additional deployment step: %s' % step_name)
                 # call it
                 step()
+            else:
+                log.error('Extra deployment step %s is unknown' % step_name)
 
     def deploy_object(self, obj, context, request, section):
         """
