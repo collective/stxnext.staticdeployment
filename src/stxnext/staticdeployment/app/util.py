@@ -438,6 +438,7 @@ class StaticDeploymentUtils(object):
                 is_page = brain.portal_type in self.page_types
                 try:
                     self._deploy_content(obj, is_page=is_page)
+                    log.info('%s deployed' % brain.getPath())
                     if portal_syndication.isSyndicationAllowed(obj):
                         page = '/'.join(obj.getPhysicalPath()) + '/RSS'
                         page = page[len(site_path) + 1:]
