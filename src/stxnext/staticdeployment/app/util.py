@@ -335,9 +335,9 @@ class StaticDeploymentUtils(object):
         return True
 
 
-    def _applay_extra_deployment_steps(self, modification_date):
+    def _apply_extra_deployment_steps(self, modification_date):
         """
-        Applays extra deployment steps
+        Applys extra deployment steps
         """
         for step_name in self.deployment_steps:
             step = queryAdapter(self.context,
@@ -380,7 +380,7 @@ class StaticDeploymentUtils(object):
             )
 
         ## find and run additional deployment steps
-        self._applay_extra_deployment_steps(None)
+        self._apply_extra_deployment_steps(None)
 
     def deploy(self, context, request, section, last_triggered=None):
         """
@@ -449,8 +449,7 @@ class StaticDeploymentUtils(object):
                         traceback.format_exc())
                     )
 
-        ## find and run additional deployment steps
-        self._applay_extra_deployment_steps(modification_date)
+        self._apply_extra_deployment_steps(modification_date)
         # update last triggered date info
         settings = IStaticDeployment(self.context)
         settings.last_triggered = unicode(DateTime().strftime('%Y/%m/%d %H:%M:%S'))
