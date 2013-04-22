@@ -127,9 +127,15 @@ class StaticDeploymentUtils(object):
         self.request.set(request_varname, self.defaultskin_name)
         self.request.method = 'GET'
         self.request.set('PUBLISHED', None)
-
-        self.base_dir = os.path.normpath(self.deployment_directory)
         self.deployed_resources = []
+
+        if os.path.isabs(self.deployment_directory):
+            self.base_dir = self.deployment_directory
+        else:
+            client_home = os.environ.get('CLIENT_HOME', '')
+            path = os.path.join(client_home, self.deployment_directory)
+            self.base_dir = os.path.abspath(path)
+        log.info('Static deployment will be saved in %s' % self.base_dir)
 
     def revert_request_modifications(self, context, request):
         """
