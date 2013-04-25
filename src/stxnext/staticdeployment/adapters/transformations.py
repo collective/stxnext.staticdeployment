@@ -43,9 +43,15 @@ class ModifiedDom(object):
     """
 
     def __init__(self, txt):
+        if not isinstance(txt, unicode):
+            try:
+                txt = txt.decode('utf8')
+            except:
+                pass
         self.txt = txt
         self.match = BODY_RE.search(txt)
         self.dom = None
+        self.group = None
         if self.match:
             group = self.match.group('body')
             if not isinstance(group, unicode):
@@ -54,6 +60,7 @@ class ModifiedDom(object):
                 except:
                     pass
             self.dom = fromstring(group)
+            self.group = group
 
     def cssselect(self, what):
         if self.dom is None:
@@ -61,9 +68,12 @@ class ModifiedDom(object):
         return self.dom.cssselect(what)
 
     def __str__(self):
-        if self.dom is None:
+        return unicode(self).encode('utf8')
+
+    def __unicode__(self):
+        if self.dom is None or self.group is None:
             return self.txt
-        return self.txt.replace(self.match.group('body'), tostring(self.dom))
+        return self.txt.replace(self.group, tostring(self.dom).decode('utf8'))
 
 
 def getDom(txt):
@@ -118,7 +128,7 @@ class ChangeRSSLinksTransformation(PostTransformation):
             return text
         for link in dom.cssselect('a[href]'):
             link.attrib['href'] = link.attrib['href'].replace('/RSS', '/RSS.xml')
-        return str(dom)
+        return unicode(dom)
 
 
 class LinkElement(object):
@@ -205,8 +215,7 @@ class ChangeImageLinksTransformation(PostTransformation):
                             new_path = new_path + '/image.jpg'
                         new_path = '/' + new_path.lstrip('/')
                         link.set(new_path)
-
-        return str(dom)
+        return unicode(dom)
 
 
 class ChangeFileLinksTransformation(PostTransformation):
@@ -315,7 +324,7 @@ class LinkRewriteTransformation(PostTransformation):
             if obj and not isinstance(obj, (FSObject, File)) and \
                     not IFolder.providedBy(obj):
                 link.set(url + '.html')
-        return str(dom)
+        return unicode(dom)
 
     @staticmethod
     def is_same_domain(destination, source):
