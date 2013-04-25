@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from OFS.interfaces import IFolder
 import os, re, logging, inspect, traceback
 from inspect import ismethod, isfunction
 from AccessControl.PermissionRole import rolesForPermissionOn
@@ -524,7 +525,7 @@ class StaticDeploymentUtils(object):
 
             filename = fullview_name
             if is_page:
-                if self.add_index:
+                if self.add_index or IFolder.providedBy(content_obj):
                     filename = os.path.join(filename, 'index.html')
                 else:
                     filename = filename.rstrip('/') + '.html'
@@ -757,7 +758,7 @@ class StaticDeploymentUtils(object):
                     is_page=True)
 
         if is_page:
-            if self.add_index:
+            if self.add_index or IFolder.providedBy(obj):
                 filename = os.path.join(filename, 'index.html')
             else:
                 filename = filename.rstrip('/') + '.html'
