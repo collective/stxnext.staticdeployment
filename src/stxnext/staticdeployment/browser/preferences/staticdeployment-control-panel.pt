@@ -30,7 +30,7 @@
                     </dt>
                     <dd tal:content="view/status" />
                 </dl>
-				
+
 				<dl id="export-running-error" class="portalMessage error" style="display:none;">
 					<dt i18n:translate="">Error</dt>
 					<dd i18n:translate="">The action of generating is already running</dd>
@@ -99,7 +99,7 @@
                              tal:define="description widget/hint;
                                          error widget/error"
                              tal:attributes="class python:'field'+(error and ' error' or '')">
-			  
+
                             <label i18n:translate=""
                                    tal:attributes="for widget/name"
                                    tal:content="widget/label">
@@ -192,7 +192,7 @@
 
                 </fieldset>
 
-                <input id="only-object" type="hidden" name="only_object" value="" />
+                <input id="only-object" type="hidden" name="only_object" tal:attributes="value request/only_object|string:" value="" />
 
                 <metal:block define-slot="above_buttons" />
 
@@ -211,7 +211,7 @@
 
             </form>
         </div>
-		
+
 		<fieldset>
         	<legend i18n:translate="">Last executed deployments</legend>
         	<table class="listing">
@@ -225,7 +225,7 @@
         			<th i18n:translate="">Status</th>
 					<th i18n:translate="">Error message</th>
         		</tr>
-        		<tal:block repeat="entry view/getAllEntries"> 
+        		<tal:block repeat="entry view/getAllEntries">
             		<tr tal:define="even repeat/entry/even" tal:attributes="class python:even and 'even' or 'odd'">
             			<td tal:content="repeat/entry/number"></td>
 						<td tal:define="entry_date entry/date"
