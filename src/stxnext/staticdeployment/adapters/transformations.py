@@ -322,7 +322,8 @@ class LinkRewriteTransformation(PostTransformation):
             url = url.rstrip('/')
             obj = self.context.restrictedTraverse(url.lstrip('/'), None)
             if obj and not isinstance(obj, (FSObject, File)) and \
-                    not IFolder.providedBy(obj):
+                    not IFolder.providedBy(obj) and not url.endswith('.htm') \
+                    and not url.endswith('.html'):
                 link.set(url + '.html')
         return unicode(dom)
 

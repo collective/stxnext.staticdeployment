@@ -525,10 +525,11 @@ class StaticDeploymentUtils(object):
 
             filename = fullview_name
             if is_page:
+                filename = filename.rstrip('/')
                 if self.add_index or IFolder.providedBy(content_obj):
                     filename = os.path.join(filename, 'index.html')
-                else:
-                    filename = filename.rstrip('/') + '.html'
+                elif not filename.endswith('.htm') and not filename.endswith('.html'):
+                    filename = filename + '.html'
             # where to write view content (based on view path)
             path = urlparse(self.context.portal_url())[2]
             filename = '/'.join((path, filename))
@@ -758,10 +759,11 @@ class StaticDeploymentUtils(object):
                     is_page=True)
 
         if is_page:
+            filename = filename.rstrip('/')
             if self.add_index or IFolder.providedBy(obj):
                 filename = os.path.join(filename, 'index.html')
-            else:
-                filename = filename.rstrip('/') + '.html'
+            elif not filename.endswith('.htm') and not filename.endswith('.html'):
+                filename = filename + '.html'
         elif isinstance(obj, ATImage) or \
                 hasattr(obj, 'getBlobWrapper') and \
                 'image' in obj.getBlobWrapper().getContentType():
@@ -1016,5 +1018,5 @@ class StaticDeploymentUtils(object):
         if filename.endswith('.css'):
             self._parse_css(pre_transformated_content, os.path.dirname(filename))
 
-        if filename.endswith('.html'):
+        if filename.endswith('.html') or filename.endswith('.htm'):
             self._parse_html(pre_transformated_content, os.path.dirname(filename))
