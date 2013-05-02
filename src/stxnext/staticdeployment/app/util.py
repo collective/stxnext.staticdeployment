@@ -81,7 +81,7 @@ RE_CSS_IMPORTS = re.compile(r"(?<=url\()[\"\']?([a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css
 # finds css imports in html (<link />)
 RE_CSS_IMPORTS_HREF = re.compile(r"(?<=href\=[\'\"])[a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css)")
 # matches non-binary files (CSS, JS, TXT, HTML)
-RE_NOT_BINARY = re.compile(r'\.css$|\.js$|\.txt$|\.html$')
+RE_NOT_BINARY = re.compile(r'\.css$|\.js$|\.txt$|\.html?$')
 
 
 def _makedirs(path):
@@ -339,6 +339,7 @@ class StaticDeploymentUtils(object):
         """
         run a deploy just on one object
         """
+        import pdb; pdb.set_trace()
         # get content for Anonymous users, not authenticated
         noSecurityManager()
         # assigning values
