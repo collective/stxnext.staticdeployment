@@ -536,7 +536,27 @@ class StaticDeploymentUtils(object):
             if context_path:
                 context = self.context.restrictedTraverse(context_path, None)
                 if not context:
-                    log.warning("Unable traverse to '%s'!" % context_path)
+                    # Perhaps it's a view traversal
+                    elements = fullview_name.split('/')
+                    obj = self.context
+                    intraversal = False
+                    for item in elements:
+                        try:
+                            if intraversal:
+                                obj = obj.publishTraverse(self.request, item)
+                            else:
+                                obj = getattr(obj, item)
+                        except AttributeError:
+                            try:
+                                obj = obj.restrictedTraverse(str(item))
+                                intraversal = True
+                            except:
+                                continue
+
+                    content = obj()
+                    filename = os.path.join(fullview_name, 'index.html')
+                    self._write(filename, content, None)
+                    #log.warning("Unable traverse to '%s'!" % context_path)
                     continue
 
 
@@ -1115,15 +1135,53 @@ class StaticDeploymentUtils(object):
 
         for item in self.deferred_resources:
             for resource in item['urls']:
-                path = resource.strip()
+                if resource:
+                    path = resource.strip()
+                else:
+                    continue
+
                 if not path.startswith('#') and \
+ 		    not path.startswith('file:') and \
+                    not path.startswith('tel:') and \
                     not path.startswith('mailto:') and \
-                    not path.startswith('ftp') and \
+                    not path.startswith('ftp:') and \
                     not already_deployed(path):
-                    if path.startswith('http'):
+                    if path.startswith('http:'):
                         path = relativize(path)
                     else:
                         path = path.lstrip('/')
+
+                    if path is not None:
+                        try:
+                            obj = self.context.restrictedTraverse(str(path))
+                            self._deploy_content(obj)
+                        except KeyError:
+                            # Perhaps it's a view with traversal
+                            # Which cannot be reached by restrictedTraverse
+                            try:
+                                elements = path.split('/')
+                                obj = self.context
+                                intraversal = False
+                                for item in elements:
+                                    try:
+                                        if intraversal:
+                                            obj = obj.publishTraverse(self.request, item)
+                                        else:
+                                            obj = getattr(obj, item)
+                                    except AttributeError:
+                                        obj = obj.restrictedTraverse(str(item))
+                                        intraversal = True
+                                if intraversal:
+                                    self._deploy_views([path], True)
+                                else:
+                                    self._deploy_content(obj)
+                            except Exception, e:
+                                # Ups, something strange here
+                                log.info('Object %s does not exists' % path)
+                                log.info(e)
+                        except Exception, e:
+                            log.info('Object %s does not exist.' % path)
+                            log.info(e)
 
                     if path:
                         self._deploy_views([str(path)], True)
