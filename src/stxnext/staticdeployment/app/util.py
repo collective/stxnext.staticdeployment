@@ -60,7 +60,7 @@ from Products.CMFPlone import PloneMessageFactory as _
 from Products.CMFPlone.Portal import PloneSite
 from Products.PythonScripts.PythonScript import PythonScript
 from Products.statusmessages.interfaces import IStatusMessage
-
+from plone.outputfilters.browser.resolveuid import uuidToURL
 from stxnext.staticdeployment.browser.preferences.staticdeployment import (
         IStaticDeployment)
 from stxnext.staticdeployment.interfaces import (
@@ -558,7 +558,7 @@ class StaticDeploymentUtils(object):
                 content_obj = context.restrictedTraverse(view_name, None)
 
             # get object's view content
-                
+
             if ismethod(content_obj) or isfunction(content_obj):
                 view = queryMultiAdapter((context, self.request), name=view_name)
                 content_obj = view.context()
@@ -1070,8 +1070,17 @@ class StaticDeploymentUtils(object):
         urls = urls + css_imports + local_styles
         self._deploy_resources(urls, unquote(base_path))
         urls = [tag['href'] for tag in soup.findAll(['a']) if tag.get('href', None)]
+        new_urls = []
+        for url in urls:
+            if 'resolveuid' in url:
+                _, data = url.split('resolveuid')
+                if data.startswith('/'):
+                    data = data[1:]
+                uid = str(data.split('/')[0])
+                url = uuidToURL(uid)
+            new_urls.append(url)
         data_dict = {'path': base_path,
-                    'urls': urls}
+                    'urls': new_urls}
         self.deferred_resources.append(data_dict)
 
 
