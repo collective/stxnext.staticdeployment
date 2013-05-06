@@ -54,8 +54,12 @@ class ModifiedDom(object):
                     group = group.decode('utf8')
                 except:
                     pass
-            self.dom = fromstring(group)
-
+            html = fromstring(group)
+	    body = html.xpath('//body')
+            if body:            
+		self.dom = body[0]
+	    else:
+	        self.dom = html
     def cssselect(self, what):
         if self.dom is None:
             return []
