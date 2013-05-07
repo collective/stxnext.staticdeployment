@@ -595,7 +595,10 @@ class StaticDeploymentUtils(object):
                     log.warning("Unable traverse to '%s'!" % fullview_name)
                     continue
             else:
-                content_obj = context.restrictedTraverse(view_name, None)
+                try:
+                    content_obj = context.restrictedTraverse(view_name, None)
+                except:
+                    continue
 
             # get object's view content
 
