@@ -57,15 +57,15 @@ class ModifiedDom(object):
                 except:
                     pass
 
-            
             parser = html5lib.HTMLParser(tree=html5lib.treebuilders.getTreeBuilder("lxml"), namespaceHTMLElements=False)
             html = html5parser.fromstring(group, parser=parser)
 
-	    body = html.xpath('//body')
-            if body:            
-		self.dom = body[0]
-	    else:
-	        self.dom = html
+            body = html.xpath('//body')
+            if body:
+                self.dom = body[0]
+            else:
+                self.dom = html
+
     def cssselect(self, what):
         if self.dom is None:
             return []
