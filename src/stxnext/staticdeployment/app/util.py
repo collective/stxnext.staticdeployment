@@ -128,7 +128,6 @@ class StaticDeploymentUtils(object):
         self.request.method = 'GET'
         self.request.set('PUBLISHED', None)
         self.deployed_resources = []
-        self.deferred_resources = []
 
         if os.path.isabs(self.deployment_directory):
             self.base_dir = self.deployment_directory
@@ -386,7 +385,6 @@ class StaticDeploymentUtils(object):
                 traceback.format_exc())
             )
 
-        self._deploy_deferred_resources()
         ## find and run additional deployment steps
         self._apply_extra_deployment_steps(None)
 
@@ -457,7 +455,6 @@ class StaticDeploymentUtils(object):
                         traceback.format_exc())
                     )
 
-        self._deploy_deferred_resources()
         self._apply_extra_deployment_steps(modification_date)
         # update last triggered date info
         settings = IStaticDeployment(self.context)
@@ -759,11 +756,7 @@ class StaticDeploymentUtils(object):
         self._write(fieldpath, str(image), omit_transform=True) # image data should already be last non-scaled image
         self.deployed_resources.append(fieldpath)
 
-        try:
-            annotations = IAnnotations(obj)
-        except Exception, e:
-            log.info(e)
-            return
+        annotations = IAnnotations(obj)
         plone_scales = annotations.get('plone.scale', {})
         for key in plone_scales.keys():
             info = plone_scales[key]
@@ -1060,10 +1053,6 @@ class StaticDeploymentUtils(object):
         local_styles = RE_CSS_URL.findall(html)
         urls = urls + css_imports + local_styles
         self._deploy_resources(urls, unquote(base_path))
-        urls = [tag['href'] for tag in soup.findAll(['a']) if tag.get('href', None)]
-        data_dict = {'path': base_path,
-                    'urls': urls}
-        self.deferred_resources.append(data_dict)
 
 
     def _parse_css(self, content, base_path=''):
@@ -1071,48 +1060,6 @@ class StaticDeploymentUtils(object):
         Save all resources used in CSS file.
         """
         self._deploy_resources(RE_CSS_URL.findall(content), unquote(base_path))
-
-
-    def _deploy_deferred_resources(self):
-        """
-        Deploy objects comming from internal links not already
-        deployed.
-        """
-
-        def already_deployed(path):
-            filename = path.lstrip('/')
-            path_to_check = os.path.join(self.base_dir, filename)
-            return os.path.exists(path_to_check)
-
-        def relativize(url):
-            actual_url = self.request.get('ACTUAL_URL', '')
-            actual_parsed = urlparse(actual_url)
-            url_parsed = urlparse(url)
-            if actual_parsed.hostname == url_parsed.hostname:
-                path = url_parsed.path
-                if url_parsed.query.strip():
-                    path += '?%s' % url_parsed.query
-                return path
-            return None
-
-        for item in self.deferred_resources:
-            for resource in item['urls']:
-                if not resource.strip().startswith('#') and \
-                    not resource.strip().startswith('mailto:') and \
-                    not resource.strip().startswith('ftp') and \
-                    not already_deployed(resource):
-                    if resource.strip().startswith('http'):
-                        path = relativize(resource.strip())
-                    else:
-                        path = resource
-
-                    if path is not None:
-                        try:
-                            obj = self.context.restrictedTraverse(str(path).lstrip('/'))
-                            self._deploy_content(obj)
-                        except Exception, e:
-                            log.info('Object %s does not exist.' % resource)
-                            log.info(e)
 
 
     def _write(self, filename, content, dir_path=None, omit_transform=False):
@@ -1163,5 +1110,6 @@ class StaticDeploymentUtils(object):
 
         if filename.endswith('.css'):
             self._parse_css(pre_transformated_content, os.path.dirname(filename))
+
         if filename.endswith('.html'):
             self._parse_html(pre_transformated_content, os.path.dirname(filename))
