@@ -26,11 +26,10 @@ from stxnext.staticdeployment.interfaces import (IPostTransformation,
         IStaticDeploymentUtils, ITransformation)
 from plone.app.imaging.interfaces import IImageScaling
 from zope.traversing.interfaces import ITraversable
-from lxml.html import fromstring, tostring
+from lxml.html import parse, tostring
 from lxml import etree
-from lxml.html import html5parser
-from cssselect import GenericTranslator, SelectorError
-import html5lib
+from cssselect import GenericTranslator
+from StringIO import StringIO
 
 FILE_PATTERN = re.compile(r"<\s*(?:a)\s+[^>]*(?:href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 LINK_PATTERN = re.compile(r"<\s*[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
@@ -57,8 +56,7 @@ class ModifiedDom(object):
                 except:
                     pass
 
-            parser = html5lib.HTMLParser(tree=html5lib.treebuilders.getTreeBuilder("lxml"), namespaceHTMLElements=False)
-            html = html5parser.fromstring(group, parser=parser)
+            html = parse(StringIO(self.txt))
 
             body = html.xpath('//body')
             if body:
@@ -70,10 +68,8 @@ class ModifiedDom(object):
         if self.dom is None:
             return []
 
-        #return self.dom.cssselect(what)
         try:
             expression = GenericTranslator().css_to_xpath(what, '//')
-
             return self.dom.xpath(expression)
         except:
             return []
@@ -81,8 +77,9 @@ class ModifiedDom(object):
     def __str__(self):
         if self.dom is None:
             return safe_unicode(self.txt, 'utf-8').encode('utf-8')
-        txt = self.txt.replace(self.match.group('body'), tostring(self.dom))
-        return safe_unicode(txt, 'utf-8').encode('utf-8')
+        txt = self.txt.replace(self.match.group(), tostring(self.dom,
+                                                            method='xml'))
+        return safe_unicode(txt, 'utf-8').encode('utf-8').replace('&amp;#13;', '')
 
 
 def getDom(txt):
