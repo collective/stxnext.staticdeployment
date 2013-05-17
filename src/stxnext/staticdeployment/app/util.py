@@ -533,7 +533,6 @@ class StaticDeploymentUtils(object):
             context = self.context
             context_path = os.path.dirname(fullview_name)
             view_name = os.path.basename(fullview_name)
-            new_req, orig_req = None, None
             if context_path:
                 context = self.context.restrictedTraverse(context_path, None)
                 if not context:
@@ -541,44 +540,26 @@ class StaticDeploymentUtils(object):
                     elements = fullview_name.split('/')
                     obj = self.context
                     intraversal = False
-                    #if 'selective' in fullview_name or \
-                    #      '80510' in fullview_name:
-                    #    import pdb; pdb.set_trace()
-                    #    a = 1
-
                     for item in elements:
                         try:
                             if intraversal:
-                                obj = obj.publishTraverse(new_req or self.request, item)
+                                obj = obj.publishTraverse(self.request, item)
                             else:
                                 obj = getattr(obj, item)
-                                new_req, orig_req = fakeRequest(obj)
                         except AttributeError:
                             try:
                                 obj = obj.restrictedTraverse(str(item))
                                 intraversal = True
                             except:
-                                if orig_req is not None:
-                                    restoreRequest(orig_req, new_req)
-
                                 continue
 
 		    try:
                         content = obj()
-                        if not content:
-                            obj.request = new_req
-	                    content = obj()
                         filename = os.path.join(fullview_name, 'index.html')
                         self._write(filename, content, None)
                         #log.warning("Unable traverse to '%s'!" % context_path)
-                        if orig_req is not None:
-                            restoreRequest(orig_req, new_req)
                         continue
-		    except Exception, e:
-                        log.info(e)
-                        if orig_req is not None:
-                            restoreRequest(orig_req, new_req)
-
+		    except:
 		        continue
 
 
@@ -1167,7 +1148,6 @@ class StaticDeploymentUtils(object):
                     not path.startswith('tel:') and \
                     not path.startswith('mailto:') and \
                     not path.startswith('ftp:') and \
-                    not path.startswith('https:') and \
                     not already_deployed(path):
                     if path.startswith('http:'):
                         path = relativize(path)
