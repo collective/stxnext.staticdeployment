@@ -553,14 +553,11 @@ class StaticDeploymentUtils(object):
                             except:
                                 continue
 
-		    try:
-                        content = obj()
-                        filename = os.path.join(fullview_name, 'index.html')
-                        self._write(filename, content, None)
-                        #log.warning("Unable traverse to '%s'!" % context_path)
-                        continue
-		    except:
-		        continue
+                    content = obj()
+                    filename = os.path.join(fullview_name, 'index.html')
+                    self._write(filename, content, None)
+                    #log.warning("Unable traverse to '%s'!" % context_path)
+                    continue
 
 
             qs = {}
