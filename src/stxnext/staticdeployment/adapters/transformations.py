@@ -78,7 +78,7 @@ class ModifiedDom(object):
         if self.dom is None:
             return safe_unicode(self.txt, 'utf-8').encode('utf-8')
         txt = self.txt.replace(self.match.group(), tostring(self.dom,
-                                                            method='xml'))
+                                                            method='html'))
         return safe_unicode(txt, 'utf-8').encode('utf-8').replace('&amp;#13;', '')
 
 
