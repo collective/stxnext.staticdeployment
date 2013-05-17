@@ -539,14 +539,6 @@ class StaticDeploymentUtils(object):
                     log.warning("Unable traverse to '%s'!" % context_path)
                     continue
 
-
-            qs = {}
-            if '?' in view_name:
-                from urlparse import parse_qsl
-                parsed = urlparse(view_name)
-                view_name = parsed.path
-                qs = dict(parse_qsl(parsed.query))
-                self.request.form.update(qs)
             # plone.resource file system resource
             if IResourceDirectory.providedBy(context):
                 try:
@@ -558,7 +550,6 @@ class StaticDeploymentUtils(object):
                 content_obj = context.restrictedTraverse(view_name, None)
 
             # get object's view content
-
             if ismethod(content_obj) or isfunction(content_obj):
                 view = queryMultiAdapter((context, self.request), name=view_name)
                 content_obj = view.context()
@@ -1115,18 +1106,23 @@ class StaticDeploymentUtils(object):
 
         for item in self.deferred_resources:
             for resource in item['urls']:
-                path = resource.strip()
-                if not path.startswith('#') and \
-                    not path.startswith('mailto:') and \
-                    not path.startswith('ftp') and \
-                    not already_deployed(path):
-                    if path.startswith('http'):
-                        path = relativize(path)
+                if not resource.strip().startswith('#') and \
+                    not resource.strip().startswith('mailto:') and \
+                    not resource.strip().startswith('ftp') and \
+                    not already_deployed(resource):
+                    if resource.strip().startswith('http'):
+                        path = relativize(resource.strip())
                     else:
-                        path = path.lstrip('/')
+                        path = resource
 
-                    if path:
-                        self._deploy_views([str(path)], True)
+                    if path is not None:
+                        try:
+                            obj = self.context.restrictedTraverse(str(path).lstrip('/'))
+                            self._deploy_content(obj)
+                        except Exception, e:
+                            log.info('Object %s does not exist.' % resource)
+                            log.info(e)
+
 
     def _write(self, filename, content, dir_path=None, omit_transform=False):
         """
