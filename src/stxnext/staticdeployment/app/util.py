@@ -508,6 +508,7 @@ class StaticDeploymentUtils(object):
             match = RE_WO_1ST_DIRECTORY.match(filename)
             if match:
                 filename = match.group(2)
+
             content = fs_file._readFile(None)
 
             path = urlparse(self.context.portal_url())[2]
@@ -540,12 +541,15 @@ class StaticDeploymentUtils(object):
                     elements = fullview_name.split('/')
                     obj = self.context
                     intraversal = False
-		    stack = []
+                    #if 'selective' in fullview_name or \
+                    #      '80510' in fullview_name:
+                    #    import pdb; pdb.set_trace()
+                    #    a = 1
+
                     for item in elements:
                         try:
                             if intraversal:
                                 obj = obj.publishTraverse(new_req or self.request, item)
-				stack.append(item)
                             else:
                                 obj = getattr(obj, item)
                                 new_req, orig_req = fakeRequest(obj)
@@ -560,11 +564,9 @@ class StaticDeploymentUtils(object):
                                 continue
 
 		    try:
-                        new_req, orig_req = fakeRequest(obj)
-			content = obj()
+                        content = obj()
                         if not content:
-                            new_req, orig_req = fakeRequest(obj)
-			    obj.request = new_req
+                            obj.request = new_req
 	                    content = obj()
                         filename = os.path.join(fullview_name, 'index.html')
                         self._write(filename, content, None)
@@ -877,7 +879,7 @@ class StaticDeploymentUtils(object):
         if content is None:
             return
 
-	filename = obj.absolute_url_path().lstrip('/')
+        filename = obj.absolute_url_path().lstrip('/')
         # deploy additional views for content type
         if PLONE_APP_BLOB_INSTALLED and isinstance(obj, ATBlob):
             self._deploy_views([os.path.join(filename, 'view'), ],
@@ -1173,13 +1175,9 @@ class StaticDeploymentUtils(object):
                         path = path.lstrip('/')
 
                     if path is not None:
-                        
-			try:
+                        try:
                             obj = self.context.restrictedTraverse(str(path))
-                            if isinstance(obj, BrowserView):
-				self._deploy_views([path], True)
-		            else:
-                                self._deploy_content(obj)
+                            self._deploy_content(obj)
                         except KeyError:
                             # Perhaps it's a view with traversal
                             # Which cannot be reached by restrictedTraverse
