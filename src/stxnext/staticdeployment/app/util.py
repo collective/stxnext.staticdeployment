@@ -423,9 +423,14 @@ class StaticDeploymentUtils(object):
 
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
-        brains = catalog(portal_type=self.page_types + self.file_types,
-                         modified={'query': [modification_date, ], 'range': 'min'},
-                         effectiveRange = DateTime(),
+        if modification_date is None:
+            brains = catalog(portal_type=self.page_types + self.file_types,
+                effectiveRange=DateTime(),
+                         )
+        else:
+            brains = catalog(portal_type=self.page_types + self.file_types,
+                modified={'query': [modification_date, ], 'range': 'min'},
+                effectiveRange=DateTime(),
                          )
         portal_syndication = getToolByName(self.context, 'portal_syndication')
         site_path = '/'.join(self.context.getPhysicalPath())
