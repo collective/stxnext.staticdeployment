@@ -407,14 +407,18 @@ class StaticDeploymentUtils(object):
 
         ## Deploy registry files
         if self.deploy_registry_files:
+            log.info('Deploying registry files: CSS, JS, KSS')
             self._deploy_registry_files('portal_css', 'styles', 'styles')
             self._deploy_registry_files('portal_javascripts', 'scripts', 'scripts')
             self._deploy_registry_files('portal_kss', 'kss', 'kineticstylesheets')
 
         # Deploy plone_skins files (if any)
+        log.info('Deploying files in skins folder')
         self._deploy_skinstool_files(self.skinstool_files)
         # Deploy additional files and pages
+        log.info('Deploying additional files')
         self._deploy_views(self.additional_files, is_page=False)
+        log.info('Deploying additional pages')
         self._deploy_views(self.additional_pages, is_page=True)
 
         ## Deploy Plone Site
