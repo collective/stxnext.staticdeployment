@@ -494,6 +494,7 @@ class StaticDeploymentUtils(object):
                     continue
                 # so html isn't added...
                 self._write(filename, content, omit_transform=True)
+                log.info('Deployed %s' % resource)
             else:
                 log.info('Resource %s ignored, because it is external' %
                     resource['src'])
@@ -525,6 +526,7 @@ class StaticDeploymentUtils(object):
             if isinstance(fs_file, FSImage):
                 filename, content = self._apply_image_transforms(filename, content)
             self._write(filename, content)
+            log.info('Deployed %s' % fs_file_path)
 
     @reset_request
     def _deploy_views(self, views, is_page=False):
@@ -532,6 +534,7 @@ class StaticDeploymentUtils(object):
         Deploy views of context as pages.
         """
         for fullview_name in views:
+            log.info('Deploying %s' % fullview_name)
             fullview_path = None
             fullview_name_args = fullview_name.split('|')
             if len(fullview_name_args) > 1:
@@ -573,6 +576,7 @@ class StaticDeploymentUtils(object):
             filename = '/'.join((path, filename))
             # write view content on the disk
             self._write(filename, content, fullview_path)
+            log.info('Deployed %s' % fullview_name)
 
 
     @reset_request
