@@ -63,7 +63,7 @@ The configuration is stored in the INI file. The default configuration is contai
     Make all links relative (otherwise they will be absolute). Default: ``false``
 
 ``add-index`` (boolean)
-    Add `index.html` to all links (that should have `index.html`). Works only when ``make-links-relative`` is enabled. Default: ``false``
+    Add `index.html` to all links (that should have `index.html`). 
 
 ``page-types`` (list)
     Page types that should be deployed. For example: ``ATDocument``, ``ATFolder``
