@@ -305,7 +305,7 @@ class RelativeLinksPostTransformation(PostTransformation):
 class LinkRewriteTransformation(PostTransformation):
     implements(IPostTransformation)
 
-    def __call__(self, text, file_path=None):
+    def __call__(self, text, file_path=None, util=None):
         dutils = getUtility(IStaticDeploymentUtils)
         if dutils.add_index:
             return text
@@ -321,9 +321,15 @@ class LinkRewriteTransformation(PostTransformation):
                 continue
             url = url.rstrip('/')
             obj = self.context.restrictedTraverse(url.lstrip('/'), None)
+
+            mt = None
+            try:
+                mt = obj.aq_base.meta_type
+            except AttributeError:
+                pass
             if obj and not isinstance(obj, (FSObject, File)) and \
                     not IFolder.providedBy(obj) and not url.endswith('.htm') \
-                    and not url.endswith('.html'):
+                    and not url.endswith('.html') and not mt in util.file_types:
                 link.set(url + '.html')
         return unicode(dom)
 

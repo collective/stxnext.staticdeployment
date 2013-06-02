@@ -215,7 +215,10 @@ class StaticDeploymentUtils(object):
             # existing transformations after the change in API
             log.debug('Processing %s post-transformation' % t_name)
             try:
-                if len(inspect.getargspec(t.__call__)[0]) == 3:
+                args = len(inspect.getargspec(t.__call__)[0])
+                if args == 4:
+                    html = t(html, file_path, self)
+                elif args == 3:
                     html = t(html, file_path)
                 else:
                     html = t(html)
