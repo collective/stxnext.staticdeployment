@@ -339,7 +339,6 @@ class StaticDeploymentUtils(object):
         """
         run a deploy just on one object
         """
-        import pdb; pdb.set_trace()
         # get content for Anonymous users, not authenticated
         noSecurityManager()
         # assigning values
