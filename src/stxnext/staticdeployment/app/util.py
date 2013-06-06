@@ -175,6 +175,7 @@ class StaticDeploymentUtils(object):
             section=section)
         self.additional_directories = self.config.get_as_list(
             'additional-directories', section=section)
+        self.path_filter = self.config.get(section, 'path_filter').strip()
         # params with default values
         # boolean params
         self.relative_links = self.config.getboolean(section,
@@ -427,16 +428,21 @@ class StaticDeploymentUtils(object):
 
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
+
+        catalog_query = dict(portal_type=self.page_types + self.file_types,
+                             effectiveRange=DateTime()
+            )
+
+        if modification_date is not None:
+            catalog_query['modified'] = {'query': [modification_date, ],
+                                         'range': 'min'}
+
+        if self.path_filter:
+            catalog_query['path'] = self.path_filter
+
         log.info('Querying the catalog for objects')
-        if modification_date is None:
-            brains = catalog(portal_type=self.page_types + self.file_types,
-                effectiveRange=DateTime(),
-                         )
-        else:
-            brains = catalog(portal_type=self.page_types + self.file_types,
-                modified={'query': [modification_date, ], 'range': 'min'},
-                effectiveRange=DateTime(),
-                         )
+        brains = catalog(**catalog_query)
+
         log.info('Queried the catalog. Starting the process')
         portal_syndication = getToolByName(self.context, 'portal_syndication')
         site_path = '/'.join(self.context.getPhysicalPath())
@@ -494,7 +500,6 @@ class StaticDeploymentUtils(object):
                     continue
                 # so html isn't added...
                 self._write(filename, content, omit_transform=True)
-                log.info('%s deployed' % resource)
             else:
                 log.info('Resource %s ignored, because it is external' %
                     resource['src'])
@@ -526,7 +531,6 @@ class StaticDeploymentUtils(object):
             if isinstance(fs_file, FSImage):
                 filename, content = self._apply_image_transforms(filename, content)
             self._write(filename, content)
-            log.info('%s deployed' % fs_file_path)
 
     @reset_request
     def _deploy_views(self, views, is_page=False):
