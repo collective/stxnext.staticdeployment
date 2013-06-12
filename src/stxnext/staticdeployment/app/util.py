@@ -175,7 +175,10 @@ class StaticDeploymentUtils(object):
             section=section)
         self.additional_directories = self.config.get_as_list(
             'additional-directories', section=section)
-        self.path_filter = self.config.get(section, 'path_filter').strip()
+        try:
+            self.path_filter = self.config.get(section, 'path_filter').strip()
+        except NoOptionError:
+            self.path_filter = ''
         # params with default values
         # boolean params
         self.relative_links = self.config.getboolean(section,
