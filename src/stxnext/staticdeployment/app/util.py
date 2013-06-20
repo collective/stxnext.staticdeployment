@@ -81,7 +81,7 @@ RE_CSS_IMPORTS = re.compile(r"(?<=url\()[\"\']?([a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css
 # finds css imports in html (<link />)
 RE_CSS_IMPORTS_HREF = re.compile(r"(?<=href\=[\'\"])[a-zA-Z0-9\+\.\-\/\:\_]+\.(?:css)")
 # matches non-binary files (CSS, JS, TXT, HTML)
-RE_NOT_BINARY = re.compile(r'\.css$|\.js$|\.txt$|\.html?$')
+RE_NOT_BINARY = re.compile(r'\.css$|\.xml|\$.js$|\.txt$|\.html?$')
 
 
 def _makedirs(path):
@@ -160,6 +160,7 @@ class StaticDeploymentUtils(object):
         self.relative_links = self.config.getboolean(section,
                 'make-links-relative', False)
         self.add_index = self.config.getboolean(section, 'add-index', False)
+        self.rss_base_url = self.config.get(section, 'rss-base-url', '')
         self.deploy_plonesite = self.config.getboolean(section,
                 'deploy-plonesite', True)
         self.deploy_registry_files = self.config.getboolean(section,
@@ -969,7 +970,6 @@ class StaticDeploymentUtils(object):
         """
         self._deploy_resources(RE_CSS_URL.findall(content), unquote(base_path))
 
-
     def _write(self, filename, content, dir_path=None, omit_transform=False):
         """
         Write content to file.
@@ -1023,3 +1023,4 @@ class StaticDeploymentUtils(object):
 
         if filename.endswith('.html') or filename.endswith('.htm'):
             self._parse_html(pre_transformated_content, os.path.dirname(filename))
+

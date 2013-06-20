@@ -305,8 +305,19 @@ class RelativeLinksPostTransformation(PostTransformation):
 class LinkRewriteTransformation(PostTransformation):
     implements(IPostTransformation)
 
-    def __call__(self, text, file_path=None, util=None):
+    def __call__(self, text, file_path=None):
         dutils = getUtility(IStaticDeploymentUtils)
+
+        if file_path.endswith('/RSS.xml') and dutils.rss_base_url:
+            # will be handled differently, all urls should already
+            # have domain ripped out
+            base = dutils.rss_base_url.rstrip('/') + '/'
+
+            return text.replace('rdf:resource="/', 'rdf:resource="' + base).replace(
+                'rdf:about="/', 'rdf:about="' + base).replace(
+                '<link>/', '<link>' + base).replace(
+                '/@@staticdeployment-controlpanel', '')
+
         if dutils.add_index:
             return text
         dom = getDom(text)
@@ -329,7 +340,7 @@ class LinkRewriteTransformation(PostTransformation):
                 pass
             if obj and not isinstance(obj, (FSObject, File)) and \
                     not IFolder.providedBy(obj) and not url.endswith('.htm') \
-                    and not url.endswith('.html') and not mt in util.file_types:
+                    and not url.endswith('.html') and not mt in dutils.file_types:
                 link.set(url + '.html')
         return unicode(dom)
 
