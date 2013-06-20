@@ -308,7 +308,7 @@ class LinkRewriteTransformation(PostTransformation):
     def __call__(self, text, file_path=None):
         dutils = getUtility(IStaticDeploymentUtils)
 
-        if file_path.endswith('/RSS.xml') and dutils.rss_base_url:
+        if file_path.lower().endswith('.xml') and dutils.rss_base_url:
             # will be handled differently, all urls should already
             # have domain ripped out
             base = dutils.rss_base_url.rstrip('/') + '/'
