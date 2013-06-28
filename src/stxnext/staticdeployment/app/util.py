@@ -194,7 +194,11 @@ class StaticDeploymentUtils(object):
         for t_name, t in transformations:
             log.debug('Processing %s transformation' % t_name)
             try:
-                html = t(html)
+                args = len(inspect.getargspec(t.__call__)[0])
+                if args == 3:
+                    html = t(html, filename)
+                else:
+                    html = t(html)
             except:
                 if filename is None:
                     filename = ''

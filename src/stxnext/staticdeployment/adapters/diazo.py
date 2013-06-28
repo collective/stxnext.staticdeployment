@@ -27,6 +27,9 @@ class ApplyDiazoThemeTransformation(PostTransformation):
 
         context = self.context
         req = getRequest()
+        if file_path.lower().endswith('.xml'):
+            return text
+
         theme_transform = ThemeTransform(context, req)
         encoding = 'utf-8'
         try:
