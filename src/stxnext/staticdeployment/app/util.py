@@ -722,7 +722,7 @@ class StaticDeploymentUtils(object):
                 else:
                     filename = image.getId()
                 dir_path = obj.absolute_url_path().lstrip('/')
-                if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
+                if filename and filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
                     objpath = os.path.join(filename, 'image.%s' %
                             filename.rsplit('.', 1)[-1])
                 else:
@@ -755,7 +755,7 @@ class StaticDeploymentUtils(object):
                 else:
                     filename = image.getId()
                 dir_path = obj.absolute_url_path().lstrip('/')
-                if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
+                if filename and filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
                     objpath = os.path.join(filename, 'image.%s' %
                             filename.rsplit('.', 1)[-1])
                 else:
