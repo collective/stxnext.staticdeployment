@@ -10,9 +10,10 @@ from DateTime import DateTime
 from urllib import unquote
 from HTMLParser import HTMLParseError
 from urlparse import urlsplit, urlparse
-
 from zope.component import getMultiAdapter, queryMultiAdapter, getAdapters
+from zope.component import queryAdapter
 from zope.component.interfaces import ComponentLookupError
+
 try:
     from zope.app.publisher.interfaces import IResource
 except ImportError:
@@ -21,6 +22,7 @@ from zope.contentprovider.interfaces import ContentProviderLookupError
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.publisher.browser import applySkin
+from zope.publisher.browser import BrowserView
 from OFS.Image import Pdata, File, Image as OFSImage
 
 try:
@@ -30,6 +32,22 @@ try:
     PLONE_APP_BLOB_INSTALLED = True
 except:
     PLONE_APP_BLOB_INSTALLED = False
+
+try:
+    from plone.namedfile.interfaces import INamed
+    from plone.namedfile.interfaces import INamedImageField
+    from plone.namedfile.interfaces import INamedFileField
+    PLONE_NAMEDFILE_INSTALLED = True
+except:
+    PLONE_NAMEDFILE_INSTALLED = False
+
+
+try:
+    from plone.dexterity.interfaces import IDexterityContent
+    DEXTERITY_INSTALLED = True
+except:
+    DEXTERITY_INSTALLED = False
+
 
 from Products.Archetypes.Field import Image as ImageField
 from Products.ATContentTypes.content.image import ATImage
@@ -41,7 +59,6 @@ from Products.CMFCore.FSPageTemplate import FSPageTemplate
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone import PloneMessageFactory as _
 from Products.CMFPlone.Portal import PloneSite
-from Products.Five import BrowserView
 from Products.PythonScripts.PythonScript import PythonScript
 from Products.statusmessages.interfaces import IStatusMessage
 
@@ -111,10 +128,15 @@ class StaticDeploymentUtils(object):
         self.request.set(request_varname, self.defaultskin_name)
         self.request.method = 'GET'
         self.request.set('PUBLISHED', None)
-
-        self.base_dir = os.path.normpath(self.deployment_directory)
         self.deployed_resources = []
 
+        if os.path.isabs(self.deployment_directory):
+            self.base_dir = self.deployment_directory
+        else:
+            client_home = os.environ.get('CLIENT_HOME', '')
+            path = os.path.join(client_home, self.deployment_directory)
+            self.base_dir = os.path.abspath(path)
+        log.info('Static deployment will be saved in %s' % self.base_dir)
 
     def revert_request_modifications(self, context, request):
         """
@@ -125,7 +147,6 @@ class StaticDeploymentUtils(object):
         applySkin(request, IDefaultBrowserLayer)
         context.changeSkin(None, request)
         request.set(request_varname, None)
-
 
     def _read_config(self, section):
         """
@@ -155,6 +176,10 @@ class StaticDeploymentUtils(object):
             section=section)
         self.additional_directories = self.config.get_as_list(
             'additional-directories', section=section)
+        try:
+            self.path_filter = self.config.get(section, 'path_filter').strip()
+        except NoOptionError:
+            self.path_filter = ''
         # params with default values
         # boolean params
         self.relative_links = self.config.getboolean(section,
@@ -183,7 +208,6 @@ class StaticDeploymentUtils(object):
             messages.addStatusMessage(_(e.message), type='error')
             raise e
 
-
     def _apply_transforms(self, html, filename=None):
         """
         Apply transforms to output html.
@@ -206,7 +230,6 @@ class StaticDeploymentUtils(object):
                     t_name, filename, traceback.format_exc()
                     ))
         return html
-
 
     def _apply_post_transforms(self, html, file_path=None):
         """
@@ -312,7 +335,8 @@ class StaticDeploymentUtils(object):
         chain = obj.aq_chain
         # is object and its parents are available for anonymous?
         for subobj in chain:
-            if IBaseObject.providedBy(subobj) or isinstance(subobj, PloneSite):
+            if IBaseObject.providedBy(subobj) or isinstance(subobj, PloneSite) or \
+                DEXTERITY_INSTALLED and IDexterityContent.providedBy(subobj):
                 if not 'Anonymous' in rolesForPermissionOn('View', subobj):
                     return False
         return True
@@ -330,18 +354,22 @@ class StaticDeploymentUtils(object):
         return True
 
 
-    def _applay_extra_deployment_steps(self, modification_date):
+    def _apply_extra_deployment_steps(self, modification_date):
         """
-        Applays extra deployment steps
+        Applys extra deployment steps
         """
-        steps = getAdapters((self.context,), IDeploymentStep)
-        for step_name, step in steps:
-            if step_name in self.deployment_steps:
+        for step_name in self.deployment_steps:
+            step = queryAdapter(self.context,
+                interface=IDeploymentStep,
+                name=step_name)
+            if step is not None:
                 # update step's vars
                 step.update(self, modification_date)
                 log.debug('Calling additional deployment step: %s' % step_name)
                 # call it
                 step()
+            else:
+                log.error('Extra deployment step %s is unknown' % step_name)
 
     def deploy_object(self, obj, context, request, section):
         """
@@ -357,11 +385,11 @@ class StaticDeploymentUtils(object):
         self._read_config(section)
         self._apply_request_modifications()
 
-        # we want only objects available for anonyous users 
+        # we want only objects available for anonyous users
         if not self._available_for_anonymous(obj):
             return
         # check if object is a normal page
-        is_page = obj.meta_type in self.page_types
+        is_page = obj.portal_type in self.page_types
         try:
             self._deploy_content(obj, is_page=is_page)
         except:
@@ -371,7 +399,7 @@ class StaticDeploymentUtils(object):
             )
 
         ## find and run additional deployment steps
-        self._applay_extra_deployment_steps(None)
+        self._apply_extra_deployment_steps(None)
 
     def deploy(self, context, request, section, last_triggered=None):
         """
@@ -392,14 +420,18 @@ class StaticDeploymentUtils(object):
 
         ## Deploy registry files
         if self.deploy_registry_files:
+            log.info('Deploying registry files: CSS, JS, KSS')
             self._deploy_registry_files('portal_css', 'styles', 'styles')
             self._deploy_registry_files('portal_javascripts', 'scripts', 'scripts')
             self._deploy_registry_files('portal_kss', 'kss', 'kineticstylesheets')
 
         # Deploy plone_skins files (if any)
+        log.info('Deploying files in skins folder')
         self._deploy_skinstool_files(self.skinstool_files)
         # Deploy additional files and pages
+        log.info('Deploying additional files')
         self._deploy_views(self.additional_files, is_page=False)
+        log.info('Deploying additional pages')
         self._deploy_views(self.additional_pages, is_page=True)
 
         ## Deploy Plone Site
@@ -408,17 +440,29 @@ class StaticDeploymentUtils(object):
 
         ## Deploy folders and pages
         catalog = getToolByName(self.context, 'portal_catalog')
-        brains = catalog(meta_type=self.page_types + self.file_types,
-                         modified={'query': [modification_date, ], 'range': 'min'},
-                         effectiveRange = DateTime(),
-                         )
+
+        catalog_query = dict(portal_type=self.page_types + self.file_types,
+                             effectiveRange=DateTime()
+            )
+
+        if modification_date is not None:
+            catalog_query['modified'] = {'query': [modification_date, ],
+                                         'range': 'min'}
+
+        if self.path_filter:
+            catalog_query['path'] = self.path_filter
+
+        log.info('Querying the catalog for objects')
+        brains = catalog(**catalog_query)
+
+        log.info('Queried the catalog. Starting the process')
         portal_syndication = getToolByName(self.context, 'portal_syndication')
         site_path = '/'.join(self.context.getPhysicalPath())
         for brain in brains:
             if not brain.review_state or \
                     brain.review_state in self.deployable_review_states:
                 obj = brain.getObject()
-                # we want only objects available for anonyous users 
+                # we want only objects available for anonyous users
                 if not self._available_for_anonymous(obj):
                     continue
                 # check extra deployment conditions
@@ -426,9 +470,10 @@ class StaticDeploymentUtils(object):
                         modification_date):
                     continue
                 # check if object is a normal page
-                is_page = brain.meta_type in self.page_types
+                is_page = brain.portal_type in self.page_types
                 try:
                     self._deploy_content(obj, is_page=is_page)
+                    log.info('%s deployed' % brain.getPath())
                     if portal_syndication.isSyndicationAllowed(obj):
                         page = '/'.join(obj.getPhysicalPath()) + '/RSS'
                         page = page[len(site_path) + 1:]
@@ -439,11 +484,11 @@ class StaticDeploymentUtils(object):
                         traceback.format_exc())
                     )
 
-        ## find and run additional deployment steps
-        self._applay_extra_deployment_steps(modification_date)
+        self._apply_extra_deployment_steps(modification_date)
         # update last triggered date info
         settings = IStaticDeployment(self.context)
         settings.last_triggered = unicode(DateTime().strftime('%Y/%m/%d %H:%M:%S'))
+        log.info('Static deployment completed')
 
 
     def _deploy_registry_files(self, registry_type, resource_name, resource_type):
@@ -454,28 +499,35 @@ class StaticDeploymentUtils(object):
                 name='resourceregistries_%s_view' % resource_name)
         registry = registry_view.registry()
         resources = getattr(registry_view, resource_type)()
+        current_url = self.context.absolute_url()
         for resource in resources:
-            filename = urlparse(resource['src'])[2]
-            try:
-                content = registry.getResourceContent(os.path.basename(filename),
-                    self.context)
-            except TypeError:
-                log.exception("File '%s' not found when deploying '%s'!" % (
-                    filename, registry_type))
-                continue
-            # so html isn't added...
-            self._write(filename, content, omit_transform=True)
+            if resource['src'].startswith(current_url):
+                filename = urlparse(resource['src'])[2]
+                try:
+                    content = registry.getResourceContent(
+                        os.path.basename(filename), self.context)
+                except TypeError:
+                    log.exception("File '%s' not found when deploying '%s'!" %
+                        (filename, registry_type))
+                    continue
+                # so html isn't added...
+                self._write(filename, content, omit_transform=True)
+            else:
+                log.info('Resource %s ignored, because it is external' %
+                    resource['src'])
 
 
     def _deploy_skinstool_files(self, files):
         """
-        Deploy files from portal_skins but not registered in portal_css or portal_js.
+        Deploy files from portal_skins but not registered in portal_css or
+        portal_js.
         """
         skins_tool = getToolByName(self.context, 'portal_skins')
         for fs_file_path in files:
             fs_file = skins_tool.getSkinByPath(fs_file_path)
             if not fs_file:
-                log.warning("File '%s' not found in portal_skins!" % fs_file_path)
+                log.warning("File '%s' not found in portal_skins!" %
+                    fs_file_path)
                 continue
 
             filename = fs_file_path
@@ -498,6 +550,7 @@ class StaticDeploymentUtils(object):
         Deploy views of context as pages.
         """
         for fullview_name in views:
+            log.info('Deploying %s' % fullview_name)
             fullview_path = None
             fullview_name_args = fullview_name.split('|')
             if len(fullview_name_args) > 1:
@@ -523,7 +576,7 @@ class StaticDeploymentUtils(object):
             else:
                 content_obj = context.restrictedTraverse(view_name, None)
 
-            # get object's view content 
+            # get object's view content
             if ismethod(content_obj) or isfunction(content_obj):
                 view = queryMultiAdapter((context, self.request), name=view_name)
                 content_obj = view.context()
@@ -543,6 +596,7 @@ class StaticDeploymentUtils(object):
             filename = '/'.join((path, filename))
             # write view content on the disk
             self._write(filename, content, fullview_path)
+            log.info('%s deployed' % fullview_name)
 
 
     @reset_request
@@ -584,11 +638,11 @@ class StaticDeploymentUtils(object):
 
             mt = None
             try:
-                mt = obj.aq_base.meta_type
+                mt = obj.aq_base.portal_type
             except AttributeError:
                 pass
 
-            if mt in self.file_types or isinstance(obj, 
+            if mt in self.file_types or isinstance(obj,
                     (ImageField, OFSImage, Pdata, File)):
                 return self._render_obj(obj.data)
 
@@ -600,8 +654,15 @@ class StaticDeploymentUtils(object):
             if PLONE_APP_BLOB_INSTALLED and IBlobWrapper.providedBy(obj):
                 return obj.data
 
-            if IBaseObject.providedBy(obj) or isinstance(obj, PloneSite):
-                def_page_id = obj.getDefaultPage()
+            if PLONE_NAMEDFILE_INSTALLED and \
+                INamed.providedBy(obj):
+                return obj.data
+
+            if IBaseObject.providedBy(obj) or isinstance(obj, PloneSite) or \
+                DEXTERITY_INSTALLED and IDexterityContent.providedBy(obj):
+                default_page_helper = getMultiAdapter((obj, self.request),
+                        name='default_page')
+                def_page_id = default_page_helper.getDefaultPage()
                 if def_page_id:
                     def_page = obj[def_page_id]
                     return self._render_obj(def_page)
@@ -655,6 +716,40 @@ class StaticDeploymentUtils(object):
         self._write('/'.join((path, 'index.html')), content)
 
 
+    def _deploy_blob_dexterity_image_field(self, obj, field):
+        """
+        Deploys Dexterity Blob Image field
+        """
+        images_helper = getMultiAdapter((obj, self.request), name='images')
+        sizes = images_helper.getAvailableSizes(field.__name__)
+        scalenames = sizes.keys()
+        scalenames.append(None)
+        for scalename in scalenames:
+            image = images_helper.scale(field.__name__, scalename)
+            if image:
+                #store original image
+                if scalename is None:
+                    filename = image.filename
+                    image = image.data
+                else:
+                    filename = image.getId()
+                dir_path = obj.absolute_url_path().lstrip('/')
+                if filename and filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
+                    objpath = os.path.join(filename, 'image.%s' %
+                            filename.rsplit('.', 1)[-1])
+                else:
+                    objpath = os.path.join(filename, 'image.jpg')
+
+                file_path = os.path.join(dir_path, objpath)
+                content = self._render_obj(image)
+                if content:
+                    file_path, content = self._apply_image_transforms(
+                            file_path, content)
+                    self._write(file_path, content, omit_transform=True)
+                    # add as already deployed resource to avoid
+                    # redeployment in _deploy_resources
+                    self.deployed_resources.append(file_path)
+
     def _deploy_blob_image_field(self, obj, field):
         """
         Deploys Blob Image field
@@ -672,7 +767,7 @@ class StaticDeploymentUtils(object):
                 else:
                     filename = image.getId()
                 dir_path = obj.absolute_url_path().lstrip('/')
-                if filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
+                if filename and filename.rsplit('.', 1)[-1] in ('png', 'jpg', 'gif', 'jpeg'):
                     objpath = os.path.join(filename, 'image.%s' %
                             filename.rsplit('.', 1)[-1])
                 else:
@@ -786,7 +881,7 @@ class StaticDeploymentUtils(object):
                 obj.getBlobWrapper().getContentType()):
             # create path like for ATImage
             if len(filename.rsplit('.', 1)) > 1:
-                filename  = os.path.join(filename, 'file.%s' % (
+                filename = os.path.join(filename, 'file.%s' % (
                     filename.rsplit('.', 1)[-1]))
             else:
                 filename = os.path.join(filename, 'file')
@@ -797,16 +892,40 @@ class StaticDeploymentUtils(object):
         if not getattr(obj, 'schema', None):
             return
 
-        for field in obj.Schema().fields():
-            if (PLONE_APP_BLOB_INSTALLED and IBlobImageField.providedBy(field)) or \
-                    field.type == 'image':
-                self._deploy_blob_image_field(obj, field)
-            elif PLONE_APP_BLOB_INSTALLED and IBlobField.providedBy(field):
-                self._deploy_blob_file_field(obj, field)
-            elif field.type == 'file' and obj.meta_type not in self.file_types:
-                self._deploy_file_field(obj, field)
-            else:
-                continue
+        # For Dexterity objects
+        if IDexterityContent.providedBy(obj):
+            from plone.dexterity.interfaces import IDexterityFTI
+            from zope.component import getUtility
+            from zope.schema import getFieldsInOrder
+            from plone.behavior.interfaces import IBehaviorAssignable
+
+            fti = getUtility(IDexterityFTI, name=obj.portal_type)
+            schema = fti.lookupSchema()
+            fields = getFieldsInOrder(schema)
+            for _, field in fields:
+                if INamedImageField.providedBy(field):
+                    self._deploy_blob_dexterity_image_field(obj, field)
+                elif INamedFileField.providedBy(field):
+                    self._deploy_blob_dexterity_file_field(obj, field)
+
+            behavior_assignable = IBehaviorAssignable(obj)
+            if behavior_assignable:
+                behaviors = behavior_assignable.enumerateBehaviors()
+                for behavior in behaviors:
+                    for k, v in getFieldsInOrder(behavior.interface):
+                        pass
+
+        else:
+            for field in obj.Schema().fields():
+                if (PLONE_APP_BLOB_INSTALLED and IBlobImageField.providedBy(field)) or \
+                        field.type == 'image':
+                    self._deploy_blob_image_field(obj, field)
+                elif PLONE_APP_BLOB_INSTALLED and IBlobField.providedBy(field):
+                    self._deploy_blob_file_field(obj, field)
+                elif field.type == 'file' and obj.portal_type not in self.file_types:
+                    self._deploy_file_field(obj, field)
+                else:
+                    continue
         if new_req is not None:
             restoreRequest(orig_req, new_req)
 
@@ -884,12 +1003,15 @@ class StaticDeploymentUtils(object):
                     parent_obj = self.context.unrestrictedTraverse(
                         unquote(parent_path), None)
                     if parent_obj:
+
                         spl_img_name = image_name.split('/')
                         if len(spl_img_name) == 1:
                             # no scalename in path
                             fieldname = spl_img_name[0]
                             scalename = None
-                            objpath = '/'.join((parent_path, 'image.jpg'))
+                            extension = fieldname.split('.')[-1]
+                            objpath = '/'.join((parent_path, 'image.%s' % extension))
+
                         else:
                             fieldname, scalename = spl_img_name
                             objpath = os.path.join(
@@ -898,20 +1020,24 @@ class StaticDeploymentUtils(object):
                         try:
                             images_view = getMultiAdapter(
                                     (parent_obj, self.request), name='images')
-                            field = images_view.field(fieldname)
-                            if field:
-                                obj = field.getScale(parent_obj, scalename)
+                            if DEXTERITY_INSTALLED and IDexterityContent.providedBy(parent_obj):
+                                obj = images_view.publishTraverse(self.request, image_name).data
+                                objpath = '/'.join((parent_path, fieldname))
                             else:
-                                # need to try and get it from the uid
-                                uid, ext = fieldname.rsplit('.', 1)
-                                from plone.scale.storage import AnnotationStorage
-                                storage = AnnotationStorage(parent_obj)
-                                info = storage.get(uid)
-                                if info is not None:
-                                    obj = images_view.make(info).__of__(parent_obj)
-                                    #using the exported scale now instead
-                                    objpath = '/'.join((parent_path, fieldname))
-                                    add_path = False
+                                field = images_view.field(fieldname)
+                                if field:
+                                    obj = field.getScale(parent_obj, scalename)
+                                else:
+                                    # need to try and get it from the uid
+                                    uid, ext = fieldname.rsplit('.', 1)
+                                    from plone.scale.storage import AnnotationStorage
+                                    storage = AnnotationStorage(parent_obj)
+                                    info = storage.get(uid)
+                                    if info is not None:
+                                        obj = images_view.make(info).__of__(parent_obj)
+                                        #using the exported scale now instead
+                                        objpath = '/'.join((parent_path, fieldname))
+                                        add_path = False
                         except ComponentLookupError:
                             pass
 
@@ -956,7 +1082,7 @@ class StaticDeploymentUtils(object):
         except HTMLParseError:
             return
 
-        # deploying resources only from local domain (the path don't contain external address) 
+        # deploying resources only from local domain (the path don't contain external address)
         urls = [tag['src'] for tag in soup.findAll(
             ['img', 'input', 'embed', 'script'], src=True)
             if not urlparse(tag['src'])[0]]

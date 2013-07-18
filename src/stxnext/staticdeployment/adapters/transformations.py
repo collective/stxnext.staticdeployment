@@ -12,6 +12,7 @@ from OFS.interfaces import IFolder
 from Products.ATContentTypes.content.image import ATImage
 from Products.CMFCore.FSObject import FSObject
 from Products.Archetypes.Field import Image as ArchetypesImage
+from Products.CMFPlone.utils import safe_unicode
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -25,9 +26,11 @@ from stxnext.staticdeployment.utils import relpath
 from stxnext.staticdeployment.interfaces import (IPostTransformation,
         IStaticDeploymentUtils, ITransformation)
 from plone.app.imaging.interfaces import IImageScaling
-from lxml.html import fromstring, tostring
+from zope.traversing.interfaces import ITraversable
+from lxml.html import parse, tostring
 from lxml import etree
-
+from cssselect import GenericTranslator
+from StringIO import StringIO
 
 FILE_PATTERN = re.compile(r"<\s*(?:a)\s+[^>]*(?:href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
 LINK_PATTERN = re.compile(r"<\s*[^>]*(?:src|href)\s*=\s*([\"']?[^\"' >]+[\"'])", re.IGNORECASE)
@@ -59,21 +62,31 @@ class ModifiedDom(object):
                     group = group.decode('utf8')
                 except:
                     pass
-            self.dom = fromstring(group)
-            self.group = group
+
+            html = parse(StringIO(self.txt))
+
+            body = html.xpath('//body')
+            if body:
+                self.dom = body[0]
+            else:
+                self.dom = html
 
     def cssselect(self, what):
         if self.dom is None:
             return []
-        return self.dom.cssselect(what)
+
+        try:
+            expression = GenericTranslator().css_to_xpath(what, '//')
+            return self.dom.xpath(expression)
+        except:
+            return []
 
     def __str__(self):
-        return unicode(self).encode('utf8')
-
-    def __unicode__(self):
-        if self.dom is None or self.group is None:
-            return self.txt
-        return self.txt.replace(self.group, tostring(self.dom).decode('utf8'))
+        if self.dom is None:
+            return safe_unicode(self.txt, 'utf-8').encode('utf-8')
+        txt = self.txt.replace(self.match.group(), tostring(self.dom,
+                                                            method='html'))
+        return safe_unicode(txt, 'utf-8').encode('utf-8').replace('&amp;#13;', '')
 
 
 def getDom(txt):
@@ -128,7 +141,8 @@ class ChangeRSSLinksTransformation(PostTransformation):
             return text
         for link in dom.cssselect('a[href]'):
             link.attrib['href'] = link.attrib['href'].replace('/RSS', '/RSS.xml')
-        return unicode(dom)
+
+        return str(dom)
 
 
 class LinkElement(object):
@@ -161,8 +175,8 @@ class ChangeImageLinksTransformation(PostTransformation):
             return text
         for link in dom.cssselect('a[href],img[src]'):
             link = LinkElement(link)
-            url = link.val.rstrip('/')
-            match_path = url.replace('%20', ' ').lstrip('/')
+            url = link.val.rstrip('/').strip()
+            match_path = url.replace('%20', ' ').lstrip('/').strip()
             if type(match_path) == unicode:
                 match_path = match_path.encode('utf-8')
             obj = self.context.unrestrictedTraverse(match_path, None)
@@ -185,7 +199,8 @@ class ChangeImageLinksTransformation(PostTransformation):
                 if not obj:
                     # not all fields are traversable
                     obj = self.context.restrictedTraverse(path, None)
-                    if IImageScaling.providedBy(obj):
+                    if IImageScaling.providedBy(obj) or \
+                        ITraversable.providedBy(obj):
                         # we can't do anything with the @@images view yet here...
                         obj = None
                     if obj and hasattr(obj, 'getField'):

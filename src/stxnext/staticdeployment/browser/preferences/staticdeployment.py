@@ -52,14 +52,14 @@ class IStaticDeployment(Interface):
         value_type=Choice(
             vocabulary="stxnext.staticdeployment.vocabularies.ConfigSections")
         )
-    
+
     last_triggered = TextLine(
         title=_(u'Last static deployment date'),
         description=_(u'Last static deployment date - format YYYY/MM/DD HH:MM:SS'),
         default=u'',
         required=False,
         )
-    
+
     delete_previous = Bool(
         title=_(u'Remove previously deployed files'),
         description=_(u''),
@@ -87,7 +87,7 @@ available_deployment_modes = (
         (u'full_deployment', 'full_deployment', _(u'Full deployment')),
         (u'update_deployment', 'update_deployment', _(u'Update deployment')),
         )
-        
+
 DeploymentModeVocabularyFactory = StaticVocabulary(available_deployment_modes)
 
 class ConfigSectionsVocabulary(object):
@@ -118,7 +118,7 @@ ConfigSectionsVocabularyFactory = ConfigSectionsVocabulary()
 
 # widgets
 class MultiCheckBoxVocabularyWidget(MultiCheckBoxWidget):
-    """ 
+    """
     Multicheckbox widget.
     """
     def __init__(self, field, request):
@@ -130,9 +130,9 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
     """
     Static deployment form.
     """
-    
+
     template = ViewPageTemplateFile('staticdeployment-control-panel.pt')
-    
+
     implements(IStaticdeploymentPloneControlPanelForm)
     label = _('Static deployment')
     description = _(u'')
@@ -141,14 +141,14 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
     form_fields = FormFields(IStaticDeployment)
     form_fields['section_choice'].custom_widget = MultiCheckBoxVocabularyWidget
     form_fields['deployment'].custom_widget = ChoiceRadioWidget
-    
+
     def getAllEntries(self):
         """ """
         return self.storage.__iter__()
-    
+
     def store(self, date, username, action, clear, full, status, errmsg=None):
         return self.storage.add(date, username, action, clear, full, status, errmsg)
-    
+
     def setUpWidgets(self, ignore_request=False):
         super(StaticDeploymentForm, self).setUpWidgets(ignore_request=ignore_request)
         self.widgets['deployment']._displayItemForMissingValue = False
@@ -182,7 +182,7 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
         """
         messages = IStatusMessage(self.request)
         username = getToolByName(self.context, 'portal_membership').getMemberInfo().get('username', '')
-        
+
         config_path = os.path.normpath(get_config_path())
         config_file = open(config_path, 'r')
         config_parser = ConfigParser()
@@ -192,28 +192,34 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
             message = _(u"Error when trying to parse '%s'" % config_path)
             messages.addStatusMessage(message, type='error')
             return
-        
+
         sections = data.get('section_choice', None)
         if not sections:
             return
-        
+
         # deleting deployed files for paths given in config file
         if data['delete_previous']:
             for section in sections:
-                path = config_parser.get(section, 'deployment-directory').strip()
-                try:
-                    shutil.rmtree(path)
-                except OSError, e:
-                    log.exception('Removing previously deployed files for path: %s' % path)
+                deployment_directory = config_parser.get(section, 'deployment-directory').strip()
+                if os.path.isabs(deployment_directory):
+                    abspath = deployment_directory
                 else:
-                    log.info(u'Files from path %s have been succesfully removed.' % path)
-        
+                    client_home = os.environ.get('CLIENT_HOME', '')
+                    path = os.path.join(client_home, deployment_directory)
+                    abspath = os.path.abspath(path)
+                try:
+                    shutil.rmtree(abspath)
+                except OSError, e:
+                    log.exception('Removing previously deployed files for path: %s' % abspath)
+                else:
+                    log.info(u'Files from path %s have been succesfully removed.' % abspath)
+
         if data['deployment']:
             deployment_utils = getUtility(IStaticDeploymentUtils)
-            
+
             # setting debug mode for resource tools
             initial_debugmode = deployment_utils.initial_resources_tools_mode(self.context)
-            
+
             # deploy only objects modified since given date
             if data['deployment'] == 'update_deployment':
                 date = data['last_triggered']
@@ -238,14 +244,14 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
                         message = _(u'Succesfull deployment for section %s' % section)
                         messages.addStatusMessage(message, type='info')
                         self.store(datetime.now(), username, section, data['delete_previous'], data['deployment'], 1)
-                        
+
                     except Exception, e:
                         log.error('Error while deploying section %s: \n %s' % (section, traceback.format_exc()))
                         message = _(u'Error while deploying section %s: %s' % (section, e))
                         messages.addStatusMessage(message, type='error')
                         self.store(datetime.now(), username, section, data['delete_previous'], data['deployment'], 0, str(e))
 
-            # reverting initial resource tools settings and request modifications  
+            # reverting initial resource tools settings and request modifications
             finally:
                 skins_tool = getToolByName(self.context, 'portal_skins')
                 deployment_utils.revert_resources_tools_mode(self.context, initial_debugmode)
@@ -264,4 +270,4 @@ class StaticDeploymentForm(ControlPanelForm, DeployedBase):
                 self._locked_on_save(data)
             finally:
                 mutex.release()
-            
+

@@ -2,7 +2,7 @@
 import os
 from setuptools import setup, find_packages
 
-version = open('src/stxnext/staticdeployment/version.txt').read()
+version = open('src/stxnext/staticdeployment/version.txt').read().strip()
 
 setup (
     name='stxnext.staticdeployment',
