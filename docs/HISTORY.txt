@@ -4,7 +4,28 @@ Changelog
 1.0.5 (unreleased)
 ------------------
 
-- 
+- Generate the static folder always in the same place, relative to
+  $INSTANCE_HOME
+  [erral]
+
+- Add more logging to the deployment steps
+  [erral]
+
+- Fixes to one-object-deployment option
+  [erral]
+
+- Option to deploy all the contents below a given path.
+  [erral]
+
+- Extra DeploymentSteps are now executed in the order the developer states
+  in the configuration file
+  [erral]
+
+- Content-types are searched now based on portal_type instead of meta_type
+  [erral]
+
+- Dexterity objects and plone.namedfile based blob support
+  [erral]
 
 - use lxml for parsing links instead
   [vangheem]
