@@ -16,7 +16,7 @@ Edit buildout.cfg and append ``stxnext.staticdeployment`` to eggs and zcml param
 	eggs =
 	  ...
 	  stxnext.staticdeployment
-	
+
 	zcml =
 	  ...
 	  stxnext.staticdeployment
@@ -33,7 +33,7 @@ This product must be also installed inside Plone site. Do do it, go to *Site Set
 Configuration
 =============
 The configuration is stored in the INI file. The default configuration is contained by the package, but it can be easily overrided by creating the custom `staticdeployment.ini` file in the `${buildout:directory}/etc` folder.
-  
+
    - stored in INI file
    - created by developer of website
    - can be used by many sites
@@ -46,6 +46,8 @@ The configuration is stored in the INI file. The default configuration is contai
 
 ``deployment-directory`` (string)
     Where to deploy site. Path can be relative or absolute. Default: `./plone-static`
+    If the path is relative, it will be computed from $INSTANCE_HOME (usualy, this
+    folder will be ${buildout:directory}/var/instance)
 
 ``layer-interface`` (string)
     Default: ``zope.publisher.interfaces.browser.IDefaultBrowserLayer``
@@ -63,7 +65,7 @@ The configuration is stored in the INI file. The default configuration is contai
     Make all links relative (otherwise they will be absolute). Default: ``false``
 
 ``add-index`` (boolean)
-    Add `index.html` to all links (that should have `index.html`). 
+    Add `index.html` to all links (that should have `index.html`).
 
 ``page-types`` (list)
     Page types that should be deployed. For example: ``ATDocument``, ``ATFolder``
@@ -79,9 +81,17 @@ The configuration is stored in the INI file. The default configuration is contai
 
 ``additional-pages`` (list)
     Other pages that should be deployed. For example: `sitemap`
-    
+
 ``deployable-review-states`` (list)
     Only pages with review states listed here will be deployed. Default: `published`
+
+``path-filter`` (string)
+    An option to deploy just the contents below the given path. Default: `empty string`
+
+``deployment-steps`` (list)
+    Optional list of named adapters (IPloneSiteRoot, IDeploymentStep), that will be
+    called after all the deployment is executed. The adapters will be called in the
+    same order of this list.
 
 
 Usage
@@ -90,7 +100,7 @@ Usage
 When website is ready to deployment go to *Site Setup* -> *Static deployment* -> *Deployment* tab. Select *Deploy static version of website* checkbox and press *Save* button. Deployment will work for few seconds or minutes (it depends on size of website and server performance).
 
 
-.. _default configuration: https://svn.plone.org/svn/collective/stxnext.staticdeployment/trunk/src/stxnext/staticdeployment/etc/staticdeployment.ini
+.. _default configuration: https://github.com/collective/stxnext.staticdeployment/blob/master/src/stxnext/staticdeployment/etc/staticdeployment.ini
 
 Author & Contact
 ================
