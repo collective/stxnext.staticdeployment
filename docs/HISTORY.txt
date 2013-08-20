@@ -1,8 +1,8 @@
 Changelog
 =========
 
-1.0.5 (unreleased)
-------------------
+1.1 (2013-08-20)
+----------------
 
 - Generate the static folder always in the same place, relative to
   $INSTANCE_HOME
