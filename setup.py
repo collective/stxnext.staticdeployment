@@ -27,7 +27,8 @@ setup (
         'setuptools',
         'five.globalrequest',
         'lxml',
-        'BeautifulSoup'
+        'BeautifulSoup',
+        'cssselect',
        ],
 
     extras_require = {
