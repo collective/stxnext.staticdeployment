@@ -15,9 +15,16 @@ from zope.component import queryAdapter
 from zope.component.interfaces import ComponentLookupError
 
 try:
-    from zope.app.publisher.interfaces import IResource
+    # Plone >= v4.3
+    from zope.browserresource.interfaces import IResource
 except ImportError:
-    from zope.component.interfaces import IResource
+    try:
+        # Plone v4.0 to v4.2
+        from zope.app.publisher.interfaces import IResource    
+    except ImportError:
+        # Plone < v4.0
+        from zope.component.interfaces import IResource
+
 from zope.contentprovider.interfaces import ContentProviderLookupError
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
