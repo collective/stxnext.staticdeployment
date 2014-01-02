@@ -10,6 +10,9 @@ Changelog
 - issue#15 - fixed import error - compatibility with Plone 4.3
   [radekj]
 
+- Plone 4.3 compatibility
+  [radekj]
+
 1.1 (2013-08-20)
 ----------------
 
