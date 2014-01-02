@@ -69,10 +69,20 @@ class ConfigParser(GenericConfigParser):
         Returns parameter values (one per line) as a list
         """
         try:
-            raw_data = self.get(section, parameter).strip()
+            raw_data = self.get(section, parameter, '').strip()
         except ConfigParserError:
             log.warning("Can not find param '%s', section '%s'." % (parameter, section))
             return []
         if not raw_data:
             return []
         return [i.strip() for i in raw_data.split('\n')]
+
+    def get(self, section, option, default=None):
+        """
+        Returns parameter values (one per line) as a list
+        """
+        try:
+            return GenericConfigParser.get(self, section, option)
+        except NoOptionError:
+            return default
+

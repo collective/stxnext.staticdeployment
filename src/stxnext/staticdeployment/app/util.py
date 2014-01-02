@@ -184,7 +184,7 @@ class StaticDeploymentUtils(object):
         self.additional_directories = self.config.get_as_list(
             'additional-directories', section=section)
         try:
-            self.path_filter = self.config.get(section, 'path_filter').strip()
+            self.path_filter = self.config.get(section, 'path_filter', '').strip()
         except NoOptionError:
             self.path_filter = ''
         # params with default values
@@ -310,13 +310,16 @@ class StaticDeploymentUtils(object):
         """
         css_tool = getToolByName(context, 'portal_css')
         js_tool = getToolByName(context, 'portal_javascripts')
-        kss_tool = getToolByName(context, 'portal_kss')
-        initial_debugmode = (css_tool.getDebugMode(), js_tool.getDebugMode(),
-                kss_tool.getDebugMode())
+        kss_tool = getToolByName(context, 'portal_kss', None)
+        if kss_tool:
+            kss_debug = kss_tool.getDebugMode()
+        else:
+            kss_debug = False
+        initial_debugmode = (css_tool.getDebugMode(), js_tool.getDebugMode(), kss_debug)
         #if DebugMode was enabled, disable it
         if initial_debugmode[0]: css_tool.setDebugMode(False)
         if initial_debugmode[1]: js_tool.setDebugMode(False)
-        if initial_debugmode[2]: kss_tool.setDebugMode(False)
+        if kss_tool and initial_debugmode[2]: kss_tool.setDebugMode(False)
         return initial_debugmode
 
 
@@ -327,12 +330,11 @@ class StaticDeploymentUtils(object):
         """
         css_tool = getToolByName(context, 'portal_css')
         js_tool = getToolByName(context, 'portal_javascripts')
-        kss_tool = getToolByName(context, 'portal_kss')
+        kss_tool = getToolByName(context, 'portal_kss', None)
         # if DebugMode was enabled for resource, enable it
         if initial_debugmode[0]: css_tool.setDebugMode(True)
         if initial_debugmode[1]: js_tool.setDebugMode(True)
-        if initial_debugmode[2]: kss_tool.setDebugMode(True)
-
+        if kss_tool and initial_debugmode[2]: kss_tool.setDebugMode(True)
 
     @staticmethod
     def _available_for_anonymous(obj):
@@ -430,7 +432,6 @@ class StaticDeploymentUtils(object):
             log.info('Deploying registry files: CSS, JS, KSS')
             self._deploy_registry_files('portal_css', 'styles', 'styles')
             self._deploy_registry_files('portal_javascripts', 'scripts', 'scripts')
-            self._deploy_registry_files('portal_kss', 'kss', 'kineticstylesheets')
 
         # Deploy plone_skins files (if any)
         log.info('Deploying files in skins folder')
