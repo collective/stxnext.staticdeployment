@@ -432,6 +432,8 @@ class StaticDeploymentUtils(object):
             log.info('Deploying registry files: CSS, JS, KSS')
             self._deploy_registry_files('portal_css', 'styles', 'styles')
             self._deploy_registry_files('portal_javascripts', 'scripts', 'scripts')
+            if getToolByName(context, 'portal_kss', None):
+                self._deploy_registry_files('portal_kss', 'kss', 'kineticstylesheets')
 
         # Deploy plone_skins files (if any)
         log.info('Deploying files in skins folder')
